@@ -1,0 +1,5 @@
+KỊCH BẢN MẪU CỦA STUDIO
+
+Đây là kịch bản đi kèm bản giao dành cho dự án chưa có phim soạn sẵn riêng.
+Mỗi tập là một đoạn phim AI ngắn; số tập khớp với đơn đặt hàng của AI Cinema.
+Khi AI Cinema yêu cầu sửa, Studio gửi lại bản v2 với các cảnh đã thay.
