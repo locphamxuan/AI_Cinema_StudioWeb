@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --border-color: rgba(15, 23, 42, 0.1);
+  --muted-color: #64748b;
+  --accent: #0f766e;
+  --accent-dark: #115e59;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b1120;
+    --foreground: #f1f5f9;
+    --card: #131c31;
+    --border-color: rgba(255, 255, 255, 0.12);
+    --muted-color: #94a3b8;
+    --accent: #2dd4bf;
+    --accent-dark: #14b8a6;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-border: var(--border-color);
+  --color-muted: var(--muted-color);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
