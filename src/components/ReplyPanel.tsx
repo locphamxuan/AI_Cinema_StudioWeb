@@ -38,12 +38,14 @@ export function ReplyPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const chosen = deliveries.find((delivery) => delivery.version === version);
 
   const send = async () => {
     setBusy(true);
     setError(null);
     setDone(null);
+    setWarning(null);
     const response = await fetch(`/api/messages/${encodeURIComponent(messageId)}/reply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,7 +53,11 @@ export function ReplyPanel({
     });
     setBusy(false);
     if (response.ok) {
+      const body = (await response.json().catch(() => null)) as { aiCinema?: { status: string; error?: string } } | null;
       setDone(`Đã gửi phim ${version} tới ${contactEmail}.`);
+      if (body?.aiCinema?.status === 'failed') {
+        setWarning(`Email đã gửi nhưng chưa báo được cho AI Cinema (${body.aiCinema.error ?? 'lỗi không rõ'}); Reviewer sẽ chưa thấy ở tab Studio.`);
+      }
       router.refresh();
     } else {
       setError(((await response.json().catch(() => null)) as { error?: string } | null)?.error ?? 'Không gửi được email.');
@@ -103,6 +109,11 @@ export function ReplyPanel({
       {done && (
         <p role="status" className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> {done}
+        </p>
+      )}
+      {warning && (
+        <p role="alert" className="text-sm text-amber-700 dark:text-amber-300">
+          {warning}
         </p>
       )}
       <button

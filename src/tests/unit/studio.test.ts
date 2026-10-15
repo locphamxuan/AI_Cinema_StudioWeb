@@ -1,9 +1,10 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ACCESS_COOKIE, accessToken, codeMatches, hasAccess } from '@/lib/access';
 import { getConfig, missingSettings } from '@/lib/config';
+import { HttpFilmNotifier, MemoryNotifier } from '@/lib/mail/film-notifier';
 import { MemorySender } from '@/lib/mail/smtp-sender';
 import { readSent } from '@/lib/sent-log';
 import { createServices, getBrief, listBriefs, replyWithFilm, StudioError } from '@/lib/studio';
@@ -54,8 +55,9 @@ describe('inbox of the studio', () => {
 describe('handing the film back', () => {
   it('emails the prepared version to the Creator and remembers it', async () => {
     const services = fixtureServices();
-    const record = await replyWithFilm(services, '1001', 'v1');
+    const { aiCinema, ...record } = await replyWithFilm(services, '1001', 'v1');
     const sent = (services.sender as MemorySender).sent;
+    expect(aiCinema).toEqual({ status: 'notified' });
 
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ to: 'creator01@aicinema.com' });
@@ -80,6 +82,54 @@ describe('handing the film back', () => {
     const record = await replyWithFilm(services, '1002', 'v1');
     expect(record.episodeCount).toBe(2);
     expect((services.sender as MemorySender).sent[0].text).toContain('Tập 2');
+  });
+
+  it('tells AI Cinema which hand-off the film belongs to', async () => {
+    const services = fixtureServices();
+    await replyWithFilm(services, '1001', 'v2');
+    expect((services.notifier as MemoryNotifier).reports).toEqual([
+      {
+        studioEmail: 'contact@anhtrang.studio',
+        creatorEmail: 'creator01@aicinema.com',
+        movieTitle: 'Căn Hộ Số 13',
+        scope: expect.any(String),
+        version: 'v2',
+        label: expect.any(String),
+        episodeCount: expect.any(Number),
+      },
+    ]);
+  });
+
+  it('keeps the sent film when AI Cinema cannot be told, and says so', async () => {
+    const services = fixtureServices();
+    services.notifier = { filmSent: async () => Promise.reject(new Error('AI Cinema trả lỗi 503')) };
+    const result = await replyWithFilm(services, '1001', 'v1');
+    expect(result.aiCinema).toEqual({ status: 'failed', error: 'AI Cinema trả lỗi 503' });
+    expect(await readSent(dataDir)).toHaveLength(1);
+  });
+
+  it('skips the report when no AI Cinema address is configured', async () => {
+    const services = createServices(getConfig({ DATA_DIR: dataDir, MAILTRAP_API_TOKEN: 'a', MAILTRAP_ACCOUNT_ID: 'b', MAILTRAP_INBOX_ID: 'c' }));
+    expect(services.notifier).toBeNull();
+  });
+
+  it('posts the report to AI Cinema with the shared token', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const notifier = new HttpFilmNotifier({ apiUrl: 'http://be/api/', token: 'tok' });
+      const report = { studioEmail: 's@x.vn', creatorEmail: 'c@x.vn', movieTitle: 'T', scope: 'Mùa 1', version: 'v1', label: 'L', episodeCount: 2 };
+      await notifier.filmSent(report);
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://be/api/studio-inbound/film-sent',
+        expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ 'x-studio-token': 'tok' }), body: JSON.stringify(report) }),
+      );
+
+      fetchMock.mockResolvedValue(new Response(JSON.stringify({ message: 'No open hand-off' }), { status: 404 }));
+      await expect(notifier.filmSent(report)).rejects.toThrow(/404: No open hand-off/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('refuses a version it does not have, and an order that is not there', async () => {
