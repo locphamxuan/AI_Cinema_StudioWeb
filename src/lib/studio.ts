@@ -4,6 +4,7 @@ import { loadCatalog, loadScript, type DemoCatalog } from './demo/catalog';
 import { composeFilmMail } from './demo/film-mail';
 import { deliveriesFor } from './demo/match';
 import { parseBrief, isBriefSubject, type Brief } from './mail/brief-parser';
+import { HttpFilmNotifier, MemoryNotifier, type FilmNotifier, type FilmSentReport } from './mail/film-notifier';
 import { FixtureInbox } from './mail/fixtures';
 import { MailtrapInbox } from './mail/mailtrap-inbox';
 import { MemorySender, SmtpSender } from './mail/smtp-sender';
@@ -25,7 +26,18 @@ export interface StudioServices {
   config: StudioConfig;
   inbox: MailInbox;
   sender: MailSender;
+  /** Null when AI_CINEMA_API_URL / STUDIO_WEBHOOK_TOKEN are not set: the Creator is then only told by email. */
+  notifier: FilmNotifier | null;
   catalog: () => Promise<DemoCatalog>;
+}
+
+/** Whether AI Cinema was told about a film that went out. */
+export type AiCinemaNotice = { status: 'notified' } | { status: 'skipped' } | { status: 'failed'; error: string };
+
+function createNotifier(config: StudioConfig): FilmNotifier | null {
+  if (config.source === 'fixtures') return new MemoryNotifier();
+  const { apiUrl, token } = config.aiCinema;
+  return apiUrl && token ? new HttpFilmNotifier(config.aiCinema) : null;
 }
 
 /** The mailbox and the sender the config asks for; `fixtures` needs no network and sends nothing. */
@@ -35,6 +47,7 @@ export function createServices(config: StudioConfig = getConfig()): StudioServic
     config,
     inbox: fixtures ? new FixtureInbox() : new MailtrapInbox(config.mailtrap),
     sender: fixtures ? new MemorySender() : new SmtpSender(config.smtp, { name: config.fromName, address: config.fromAddress }),
+    notifier: createNotifier(config),
     catalog: () => loadCatalog(),
   };
 }
@@ -77,8 +90,15 @@ export async function getBrief(services: StudioServices, id: string): Promise<Br
   return { brief, sent: sentFor(await readSent(services.config.dataDir), id) };
 }
 
-/** Sends the prepared film `version` back to the Creator named in the brief and records it. */
-export async function replyWithFilm(services: StudioServices, messageId: string, version: string): Promise<SentRecord> {
+/**
+ * Sends the prepared film `version` back to the Creator named in the brief and records it, then tells AI Cinema
+ * so the Creator and Reviewer see it in the app. The mail is what counts: a failed report never undoes it.
+ */
+export async function replyWithFilm(
+  services: StudioServices,
+  messageId: string,
+  version: string,
+): Promise<SentRecord & { aiCinema: AiCinemaNotice }> {
   const { brief } = await getBrief(services, messageId);
   const { project, deliveries } = deliveriesFor(brief, await services.catalog());
   const delivery = deliveries.find((candidate) => candidate.version === version);
@@ -107,5 +127,24 @@ export async function replyWithFilm(services: StudioServices, messageId: string,
     sentAt: new Date().toISOString(),
   };
   await appendSent(services.config.dataDir, record);
-  return record;
+  const aiCinema = await tellAiCinema(services, {
+    studioEmail: brief.toEmail,
+    creatorEmail: brief.contactEmail,
+    movieTitle: brief.movieTitle,
+    scope: brief.scope,
+    version: delivery.version,
+    label: delivery.label,
+    episodeCount: delivery.episodes.length,
+  });
+  return { ...record, aiCinema };
+}
+
+async function tellAiCinema(services: StudioServices, report: FilmSentReport): Promise<AiCinemaNotice> {
+  if (!services.notifier) return { status: 'skipped' };
+  try {
+    await services.notifier.filmSent(report);
+    return { status: 'notified' };
+  } catch (error) {
+    return { status: 'failed', error: error instanceof Error ? error.message : String(error) };
+  }
 }

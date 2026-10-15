@@ -45,6 +45,30 @@
           ]
         }
       ]
+    },
+    {
+      "title": "Phim hay mỗi ngày",
+      "aliases": ["Phim hay moi ngay", "phimhaymoingay"],
+      "script": "phim-hay-moi-ngay.txt",
+      "synopsis": "Phim AI khung dọc (9:16) dài khoảng 10 phút, dùng làm phim mẫu của Studio.",
+      "deliveries": [
+        {
+          "version": "v1",
+          "label": "Bản giao đầu",
+          "summary": "Phim hoàn chỉnh một tập, khung dọc 9:16.",
+          "episodes": [
+            { "title": "Tập 1: Phim hay mỗi ngày", "durationSeconds": 628, "url": "https://pub-a25bed12bf0f4514910fbf5cba32666f.r2.dev/public/studio-demo/phim-hay-moi-ngay.mp4" }
+          ]
+        },
+        {
+          "version": "v2",
+          "label": "Bản sửa theo góp ý",
+          "summary": "Cùng nội dung, dùng khi Reviewer yêu cầu giao lại.",
+          "episodes": [
+            { "title": "Tập 1: Phim hay mỗi ngày (bản sửa)", "durationSeconds": 628, "url": "https://pub-a25bed12bf0f4514910fbf5cba32666f.r2.dev/public/studio-demo/phim-hay-moi-ngay.mp4" }
+          ]
+        }
+      ]
     }
   ],
   "generic": {

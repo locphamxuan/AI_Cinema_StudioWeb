@@ -16,8 +16,15 @@ export interface SmtpConfig {
   password: string;
 }
 
+/** Where the studio tells AI Cinema about the films it mails; both empty = nobody is told. */
+export interface AiCinemaConfig {
+  apiUrl: string;
+  token: string;
+}
+
 export interface StudioConfig {
   source: MailSource;
+  aiCinema: AiCinemaConfig;
   mailtrap: MailtrapConfig;
   /** Lower-cased studio addresses whose mail is shown; empty = every hand-off mail of the inbox. */
   studioEmails: string[];
@@ -35,6 +42,7 @@ type Env = Record<string, string | undefined>;
 export function getConfig(env: Env = process.env): StudioConfig {
   return {
     source: env.MAIL_SOURCE === 'fixtures' ? 'fixtures' : 'mailtrap',
+    aiCinema: { apiUrl: text(env.AI_CINEMA_API_URL), token: text(env.STUDIO_WEBHOOK_TOKEN) },
     mailtrap: {
       apiToken: text(env.MAILTRAP_API_TOKEN),
       accountId: text(env.MAILTRAP_ACCOUNT_ID),
