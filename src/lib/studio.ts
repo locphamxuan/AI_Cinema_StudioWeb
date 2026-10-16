@@ -9,8 +9,10 @@ import { FixtureInbox } from './mail/fixtures';
 import { ImapInbox } from './mail/imap-inbox';
 import { MailtrapInbox } from './mail/mailtrap-inbox';
 import { MemorySender, SmtpSender } from './mail/smtp-sender';
-import type { MailInbox, MailSender } from './mail/types';
+import type { MailInbox, MailSender, OutgoingMail } from './mail/types';
+import { readFilm } from './films';
 import { appendSent, readSent, sentFor, type SentRecord } from './sent-log';
+import { composeUploadMail, type UploadedEpisode } from './upload-mail';
 
 /** An answer the site can give a visitor for something that cannot be done, with the HTTP status it maps to. */
 export class StudioError extends Error {
@@ -117,6 +119,68 @@ export async function replyWithFilm(
     script: await loadScript(project),
     studioName: services.config.fromName,
   });
+  return deliver(services, brief, mail, {
+    source: 'prepared',
+    version: delivery.version,
+    label: delivery.label,
+    episodeCount: delivery.episodes.length,
+  });
+}
+
+/** What the studio asks for when it hands back videos it uploaded: which version, a note, a video per episode. */
+export interface UploadReplyRequest {
+  version: string;
+  label: string;
+  note: string;
+  episodes: { episode: number; filmId: string }[];
+}
+
+/** Hands back the videos the studio uploaded from its own machine, one download link per ordered episode. */
+export async function replyWithUpload(
+  services: StudioServices,
+  messageId: string,
+  request: UploadReplyRequest,
+): Promise<SentRecord & { aiCinema: AiCinemaNotice }> {
+  const { brief } = await getBrief(services, messageId);
+  const episodes = await uploadedEpisodes(services.config.dataDir, brief, request.episodes);
+  const delivery = { version: request.version.trim(), label: request.label.trim(), note: request.note, episodes };
+  if (!/^v\d{1,3}$/.test(delivery.version)) throw new StudioError(400, 'Bản giao phải có dạng v1, v2, ...');
+  if (!delivery.label || delivery.label.length > 100) throw new StudioError(400, 'Đặt tên cho bản giao (tối đa 100 ký tự).');
+  if (request.note.length > 2000) throw new StudioError(400, 'Lời nhắn tối đa 2000 ký tự.');
+
+  const mail = composeUploadMail({ brief, delivery, studioName: services.config.fromName, publicUrl: services.config.publicUrl });
+  return deliver(services, brief, mail, {
+    source: 'upload',
+    version: delivery.version,
+    label: delivery.label,
+    episodeCount: episodes.length,
+    files: episodes.map(({ episode, film }) => ({ episode, fileName: film.fileName, sizeBytes: film.sizeBytes })),
+  });
+}
+
+async function uploadedEpisodes(dataDir: string, brief: Brief, picked: UploadReplyRequest['episodes']) {
+  if (!picked.length) throw new StudioError(400, 'Chọn ít nhất một video để gửi.');
+  const seen = new Set<number>();
+  const episodes: UploadedEpisode[] = [];
+  for (const { episode, filmId } of picked) {
+    if (!Number.isInteger(episode) || episode < 1 || episode > brief.episodeCount || seen.has(episode)) {
+      throw new StudioError(400, `Tập ${episode} không có trong đơn đặt hàng (${brief.episodeCount} tập) hoặc bị chọn hai lần.`);
+    }
+    const film = await readFilm(dataDir, filmId);
+    if (!film) throw new StudioError(400, `Video của tập ${episode} không còn trên Studio Web; hãy tải lên lại.`);
+    seen.add(episode);
+    episodes.push({ episode, film });
+  }
+  return episodes;
+}
+
+/** Mails the film, keeps it in the sent log, then tells AI Cinema. The mail is what counts: a failed report never undoes it. */
+async function deliver(
+  services: StudioServices,
+  brief: Brief,
+  mail: OutgoingMail,
+  sent: Pick<SentRecord, 'source' | 'version' | 'label' | 'episodeCount' | 'files'>,
+): Promise<SentRecord & { aiCinema: AiCinemaNotice }> {
   try {
     await services.sender.send(mail);
   } catch (error) {
@@ -124,13 +188,12 @@ export async function replyWithFilm(
   }
   const record: SentRecord = {
     id: randomUUID(),
-    messageId,
-    version: delivery.version,
+    messageId: brief.messageId,
     to: mail.to,
     subject: mail.subject,
     movieTitle: brief.movieTitle,
-    episodeCount: delivery.episodes.length,
     sentAt: new Date().toISOString(),
+    ...sent,
   };
   await appendSent(services.config.dataDir, record);
   const aiCinema = await tellAiCinema(services, {
@@ -138,9 +201,9 @@ export async function replyWithFilm(
     creatorEmail: brief.contactEmail,
     movieTitle: brief.movieTitle,
     scope: brief.scope,
-    version: delivery.version,
-    label: delivery.label,
-    episodeCount: delivery.episodes.length,
+    version: sent.version,
+    label: sent.label ?? '',
+    episodeCount: sent.episodeCount,
   });
   return { ...record, aiCinema };
 }
