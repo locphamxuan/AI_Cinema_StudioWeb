@@ -22,12 +22,18 @@ const fixtureServices = (extra: Record<string, string> = {}) =>
 describe('settings', () => {
   it('reads the environment with safe defaults', () => {
     const config = getConfig({ STUDIO_EMAILS: ' A@x.vn, b@x.vn ,', SMTP_PORT: 'oops' });
-    expect(config).toMatchObject({ source: 'mailtrap', studioEmails: ['a@x.vn', 'b@x.vn'], accessCode: '', dataDir: '.data' });
+    expect(config).toMatchObject({ source: 'imap', imap: { host: 'imap.gmail.com', port: 993, mailbox: 'INBOX' }, studioEmails: ['a@x.vn', 'b@x.vn'], accessCode: '', dataDir: '.data' });
     expect(config.smtp).toMatchObject({ host: 'sandbox.smtp.mailtrap.io', port: 587, secure: false });
   });
 
   it('says what is missing before the mailbox can be read', () => {
-    expect(missingSettings(getConfig({}))).toEqual(['MAILTRAP_API_TOKEN', 'MAILTRAP_ACCOUNT_ID', 'MAILTRAP_INBOX_ID']);
+    expect(missingSettings(getConfig({}))).toEqual(['IMAP_USER', 'IMAP_PASSWORD']);
+    expect(missingSettings(getConfig({ IMAP_USER: 'a@gmail.com', IMAP_PASSWORD: 'x' }))).toEqual([]);
+    expect(missingSettings(getConfig({ MAIL_SOURCE: 'mailtrap' }))).toEqual([
+      'MAILTRAP_API_TOKEN',
+      'MAILTRAP_ACCOUNT_ID',
+      'MAILTRAP_INBOX_ID',
+    ]);
     expect(missingSettings(getConfig({ MAIL_SOURCE: 'fixtures' }))).toEqual([]);
   });
 });
@@ -40,9 +46,11 @@ describe('inbox of the studio', () => {
     expect(await listBriefs(fixtureServices({ STUDIO_EMAILS: 'Contact@AnhTrang.studio' }))).toHaveLength(2);
   });
 
-  it('refuses to read a Mailtrap inbox that is not configured', async () => {
-    const services = createServices(getConfig({ DATA_DIR: dataDir }));
-    await expect(listBriefs(services)).rejects.toMatchObject({ status: 503, message: expect.stringContaining('MAILTRAP_API_TOKEN') });
+  it('refuses to read a mailbox that is not configured', async () => {
+    const imap = createServices(getConfig({ DATA_DIR: dataDir }));
+    await expect(listBriefs(imap)).rejects.toMatchObject({ status: 503, message: expect.stringContaining('IMAP_PASSWORD') });
+    const mailtrap = createServices(getConfig({ MAIL_SOURCE: 'mailtrap', DATA_DIR: dataDir }));
+    await expect(listBriefs(mailtrap)).rejects.toMatchObject({ status: 503, message: expect.stringContaining('MAILTRAP_API_TOKEN') });
   });
 
   it('opens one brief and says so when there is none', async () => {
