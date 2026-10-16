@@ -8,10 +8,17 @@ export interface SentRecord {
   messageId: string;
   version: string;
   to: string;
+  /** Copied in; absent on records written before CC existed. */
+  cc?: string[];
   subject: string;
   movieTitle: string;
   episodeCount: number;
   sentAt: string;
+  /** prepared = a film of demo-data; upload = videos the studio uploaded. Absent on records written before. */
+  source?: 'prepared' | 'upload';
+  label?: string;
+  /** The uploaded videos, by episode of the order. */
+  files?: { episode: number; fileName: string; sizeBytes: number }[];
 }
 
 const FILE = 'sent.json';

@@ -4,12 +4,22 @@ import type { DemoCatalog } from '@/lib/demo/catalog';
 import { formatBytes, formatDateTime, formatNumber } from '@/lib/format';
 import type { BriefRow } from '@/lib/studio';
 import { CARD } from './common';
+import { partName } from '@/lib/upload-mail';
 import { ReplyPanel } from './ReplyPanel';
+import { ReplyTabs } from './ReplyTabs';
+import { UploadReplyPanel } from './UploadReplyPanel';
 
 /** One hand-off mail in full: what is ordered, who to answer, the attachments, and the films to send back. */
 export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCatalog }) {
   const { brief, sent } = row;
   const { specific, deliveries } = deliveriesFor(brief, catalog);
+  const parts = Array.from({ length: brief.episodeCount }, (_, i) => partName(brief, i + 1));
+  const people = {
+    contact: { name: brief.contactName, email: brief.contactEmail },
+    coSenders: brief.coSenders,
+    owners: brief.episodeOwners,
+  };
+  const subjectPrefix = `[Studio] Giao phim "${brief.movieTitle}" (${brief.scope})`;
   const views = deliveries.map((delivery) => ({
     version: delivery.version,
     label: delivery.label,
@@ -35,12 +45,18 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
           <div className="flex gap-2">
             <dt className="w-32 shrink-0 text-muted">Đầu mối AI Cinema</dt>
             <dd>
-              {brief.contactName} — {brief.contactEmail}
+              {brief.contactName} - {brief.contactEmail}
             </dd>
           </div>
+          {brief.coSenders.length > 0 && (
+            <div className="flex gap-2">
+              <dt className="w-32 shrink-0 text-muted">Đồng gửi</dt>
+              <dd>{brief.coSenders.map((person) => `${person.name} - ${person.email}`).join(', ')}</dd>
+            </div>
+          )}
           <div className="flex gap-2">
             <dt className="w-32 shrink-0 text-muted">Phí sản xuất</dt>
-            <dd>{brief.feeTokens === null ? '—' : `${formatNumber(brief.feeTokens)} Token (${formatNumber(brief.feeVnd)} ₫)`}</dd>
+            <dd>{brief.feeTokens === null ? '-' : `${formatNumber(brief.feeTokens)} Token (${formatNumber(brief.feeVnd)} ₫)`}</dd>
           </div>
         </dl>
         <div>
@@ -69,7 +85,21 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
         </div>
       </section>
 
-      <ReplyPanel messageId={brief.messageId} contactName={brief.contactName} contactEmail={brief.contactEmail} deliveries={views} generic={!specific} />
+      <ReplyTabs
+        upload={
+          <UploadReplyPanel messageId={brief.messageId} people={people} subjectPrefix={subjectPrefix} partNames={parts} />
+        }
+        prepared={
+          <ReplyPanel
+            messageId={brief.messageId}
+            people={people}
+            subjectPrefix={subjectPrefix}
+            deliveries={views}
+            generic={!specific}
+            partNames={parts}
+          />
+        }
+      />
 
       {sent.length > 0 && (
         <section className={`${CARD} p-5`} aria-label="Đã gửi cho đơn này">
@@ -77,7 +107,14 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
           <ul className="space-y-1 text-sm">
             {sent.map((record) => (
               <li key={record.id}>
-                {formatDateTime(record.sentAt)} — bản {record.version}, {record.episodeCount} tập, tới {record.to}
+                {formatDateTime(record.sentAt)} - {record.label ? `${record.label} ` : 'bản '}{record.version}, {record.episodeCount} tập, tới {record.to}
+                {record.cc?.length ? `, CC ${record.cc.join(', ')}` : ''}
+                {record.source === 'upload' ? ' · video tải từ máy' : ' · phim soạn sẵn'}
+                {record.files && record.files.length > 0 && (
+                  <span className="block text-xs text-muted">
+                    {record.files.map((file) => `${partName(brief, file.episode)}: ${file.fileName} (${formatBytes(file.sizeBytes)})`).join(' · ')}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

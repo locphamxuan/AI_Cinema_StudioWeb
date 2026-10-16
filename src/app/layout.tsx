@@ -3,7 +3,7 @@ import { AppHeader } from '@/components/AppHeader';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Studio đối tác — nhận đơn đặt hàng và giao phim qua email',
+  title: 'Studio đối tác - nhận đơn đặt hàng và giao phim qua email',
   description: 'Trang của Studio đối tác bên thứ 3: nhận email bàn giao của AI Cinema và gửi lại phim đã soạn sẵn.',
 };
 

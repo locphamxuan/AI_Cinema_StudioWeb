@@ -3,10 +3,10 @@ const NUMBER = new Intl.NumberFormat('vi-VN');
 
 export function formatDateTime(iso: string): string {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '—' : DATE_TIME.format(date);
+  return Number.isNaN(date.getTime()) ? '-' : DATE_TIME.format(date);
 }
 
-export const formatNumber = (n: number | null | undefined) => (n === null || n === undefined ? '—' : NUMBER.format(n));
+export const formatNumber = (n: number | null | undefined) => (n === null || n === undefined ? '-' : NUMBER.format(n));
 
 /** 125 → "2:05" */
 export function formatDuration(seconds: number): string {
@@ -15,7 +15,7 @@ export function formatDuration(seconds: number): string {
 }
 
 export function formatBytes(bytes: number): string {
-  if (!bytes) return '—';
+  if (!bytes) return '-';
   const units = ['B', 'KB', 'MB', 'GB'];
   let value = bytes;
   let unit = 0;

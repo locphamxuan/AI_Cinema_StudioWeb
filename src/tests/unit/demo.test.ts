@@ -55,7 +55,7 @@ describe('demo films of the studio', () => {
     expect(fitDelivery(v1, 2).episodes).toHaveLength(2);
     const longer = fitDelivery(v1, v1.episodes.length + 2);
     expect(longer.episodes).toHaveLength(v1.episodes.length + 2);
-    expect(longer.episodes.at(-1)?.title).toMatch(/^Tập \d+ — /);
+    expect(longer.episodes.at(-1)?.title).toMatch(/^Tập \d+ - /);
     expect(fitDelivery(v1, 0)).toBe(v1);
   });
 
@@ -80,7 +80,7 @@ describe('the mail that hands a film back', () => {
     expect(mail.subject).toContain('Căn Hộ Số 13');
     expect(mail.subject).toContain('v2');
     for (const [i, episode] of v2.episodes.entries()) {
-      expect(mail.text).toContain(`Tập ${i + 1} — ${episode.title}`);
+      expect(mail.text).toContain(`Tập ${i + 1} - ${episode.title}`);
       expect(mail.text).toContain(episode.url);
     }
     expect(mail.text).toContain('Kịch bản đính kèm');
