@@ -31,6 +31,8 @@ export interface AttachmentFile {
 
 export interface OutgoingMail {
   to: string;
+  /** Copied in: the other Creators of the season (the brief's "Đồng gửi"). */
+  cc?: string[];
   subject: string;
   text: string;
   attachments: { filename: string; content: Buffer; contentType: string }[];

@@ -8,6 +8,8 @@ export interface SentRecord {
   messageId: string;
   version: string;
   to: string;
+  /** Copied in; absent on records written before CC existed. */
+  cc?: string[];
   subject: string;
   movieTitle: string;
   episodeCount: number;

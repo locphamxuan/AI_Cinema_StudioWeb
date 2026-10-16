@@ -2,6 +2,7 @@ import { filmSubject } from './demo/film-mail';
 import { filmUrl, type StoredFilm } from './films';
 import { formatBytes } from './format';
 import type { Brief } from './mail/brief-parser';
+import { defaultCompose, greeting, ownerOf, type Compose } from './mail/compose';
 import type { OutgoingMail } from './mail/types';
 
 /** One episode of the order and the video the studio uploaded for it. */
@@ -37,16 +38,24 @@ export function composeUploadMail(input: {
   delivery: UploadDelivery;
   studioName: string;
   publicUrl: string;
+  /** The envelope the studio wrote; the brief's contact and co-senders otherwise. */
+  compose?: Compose;
 }): OutgoingMail {
   const { brief, delivery, studioName, publicUrl } = input;
+  const envelope = input.compose ?? defaultCompose(brief, filmSubject(brief, delivery));
   const ordered = [...delivery.episodes].sort((a, b) => a.episode - b.episode);
   const missing = brief.episodeCount - ordered.length;
-  const lines = ordered.map(
-    ({ episode, film }) =>
-      `${partName(brief, episode)} - ${film.fileName} (${formatBytes(film.sizeBytes)})\n  Tải về: ${filmUrl(publicUrl, film)}`,
+  const lines = ordered.map(({ episode, film }) =>
+    [
+      `${partName(brief, episode)} - ${film.fileName} (${formatBytes(film.sizeBytes)})`,
+      ownerOf(brief, episode),
+      `Tải về: ${filmUrl(publicUrl, film)}`,
+    ]
+      .filter(Boolean)
+      .join('\n  '),
   );
   const text = [
-    `Chào ${brief.contactName},`,
+    greeting(brief, envelope.to),
     '',
     `${studioName} gửi phim "${brief.movieTitle}" (${brief.scope}) theo đơn đặt hàng của AI Cinema.`,
     `${delivery.label} (${delivery.version}): ${ordered.length}/${brief.episodeCount} tập.`,
@@ -62,5 +71,5 @@ export function composeUploadMail(input: {
     .filter((line): line is string => line !== null)
     .join('\n');
 
-  return { to: brief.contactEmail, subject: filmSubject(brief, delivery), text, attachments: [] };
+  return { ...envelope, text, attachments: [] };
 }

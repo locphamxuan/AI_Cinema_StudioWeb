@@ -8,6 +8,7 @@ import { HttpFilmNotifier, MemoryNotifier, type FilmNotifier, type FilmSentRepor
 import { FixtureInbox } from './mail/fixtures';
 import { ImapInbox } from './mail/imap-inbox';
 import { MailtrapInbox } from './mail/mailtrap-inbox';
+import type { Compose } from './mail/compose';
 import { MemorySender, SmtpSender } from './mail/smtp-sender';
 import type { MailInbox, MailSender, OutgoingMail } from './mail/types';
 import { readFilm } from './films';
@@ -106,6 +107,7 @@ export async function replyWithFilm(
   services: StudioServices,
   messageId: string,
   version: string,
+  compose?: Compose | null,
 ): Promise<SentRecord & { aiCinema: AiCinemaNotice }> {
   const { brief } = await getBrief(services, messageId);
   const { project, deliveries } = deliveriesFor(brief, await services.catalog());
@@ -118,6 +120,7 @@ export async function replyWithFilm(
     delivery,
     script: await loadScript(project),
     studioName: services.config.fromName,
+    compose: compose ?? undefined,
   });
   return deliver(services, brief, mail, {
     source: 'prepared',
@@ -133,6 +136,8 @@ export interface UploadReplyRequest {
   label: string;
   note: string;
   episodes: { episode: number; filmId: string }[];
+  /** To, CC and subject as the studio wrote them; the brief's contact and co-senders otherwise. */
+  compose?: Compose | null;
 }
 
 /** Hands back the videos the studio uploaded from its own machine, one download link per ordered episode. */
@@ -148,7 +153,13 @@ export async function replyWithUpload(
   if (!delivery.label || delivery.label.length > 100) throw new StudioError(400, 'Đặt tên cho bản giao (tối đa 100 ký tự).');
   if (request.note.length > 2000) throw new StudioError(400, 'Lời nhắn tối đa 2000 ký tự.');
 
-  const mail = composeUploadMail({ brief, delivery, studioName: services.config.fromName, publicUrl: services.config.publicUrl });
+  const mail = composeUploadMail({
+    brief,
+    delivery,
+    studioName: services.config.fromName,
+    publicUrl: services.config.publicUrl,
+    compose: request.compose ?? undefined,
+  });
   return deliver(services, brief, mail, {
     source: 'upload',
     version: delivery.version,
@@ -190,6 +201,7 @@ async function deliver(
     id: randomUUID(),
     messageId: brief.messageId,
     to: mail.to,
+    ...(mail.cc?.length ? { cc: mail.cc } : {}),
     subject: mail.subject,
     movieTitle: brief.movieTitle,
     sentAt: new Date().toISOString(),
