@@ -6,6 +6,7 @@ import { deliveriesFor } from './demo/match';
 import { parseBrief, isBriefSubject, type Brief } from './mail/brief-parser';
 import { HttpFilmNotifier, MemoryNotifier, type FilmNotifier, type FilmSentReport } from './mail/film-notifier';
 import { FixtureInbox } from './mail/fixtures';
+import { ImapInbox } from './mail/imap-inbox';
 import { MailtrapInbox } from './mail/mailtrap-inbox';
 import { MemorySender, SmtpSender } from './mail/smtp-sender';
 import type { MailInbox, MailSender } from './mail/types';
@@ -34,6 +35,11 @@ export interface StudioServices {
 /** Whether AI Cinema was told about a film that went out. */
 export type AiCinemaNotice = { status: 'notified' } | { status: 'skipped' } | { status: 'failed'; error: string };
 
+function createInbox(config: StudioConfig): MailInbox {
+  if (config.source === 'fixtures') return new FixtureInbox();
+  return config.source === 'imap' ? new ImapInbox(config.imap) : new MailtrapInbox(config.mailtrap);
+}
+
 function createNotifier(config: StudioConfig): FilmNotifier | null {
   if (config.source === 'fixtures') return new MemoryNotifier();
   const { apiUrl, token } = config.aiCinema;
@@ -45,7 +51,7 @@ export function createServices(config: StudioConfig = getConfig()): StudioServic
   const fixtures = config.source === 'fixtures';
   return {
     config,
-    inbox: fixtures ? new FixtureInbox() : new MailtrapInbox(config.mailtrap),
+    inbox: createInbox(config),
     sender: fixtures ? new MemorySender() : new SmtpSender(config.smtp, { name: config.fromName, address: config.fromAddress }),
     notifier: createNotifier(config),
     catalog: () => loadCatalog(),
