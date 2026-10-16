@@ -57,11 +57,11 @@ describe('ReplyPanel', () => {
   it('offers the versions, shows the episodes of the chosen one and how often it went out', async () => {
     render(panel());
     expect(screen.getByRole('radio', { name: /Bản giao đầu \(v1\)/ })).toBeChecked();
-    expect(screen.getByText('Tập 1 — Tập đầu')).toBeInTheDocument();
+    expect(screen.getByText('Tập 1 - Tập đầu')).toBeInTheDocument();
     expect(screen.getByText('2:05')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('radio', { name: /Bản sửa theo góp ý \(v2\)/ }));
-    expect(screen.getByText('Tập 1 — Tập đầu (sửa)')).toBeInTheDocument();
+    expect(screen.getByText('Tập 1 - Tập đầu (sửa)')).toBeInTheDocument();
     expect(screen.getByText(/đã gửi 2 lần/)).toBeInTheDocument();
   });
 
