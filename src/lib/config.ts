@@ -44,6 +44,8 @@ export interface StudioConfig {
   fromAddress: string;
   accessCode: string;
   dataDir: string;
+  /** This site's address as the Creator reaches it: uploaded films are downloaded from here. */
+  publicUrl: string;
 }
 
 const text = (value: string | undefined, fallback = '') => value?.trim() || fallback;
@@ -82,6 +84,7 @@ export function getConfig(env: Env = process.env): StudioConfig {
     fromAddress: text(env.MAIL_FROM_ADDRESS, 'studio@aicinema-partner.local'),
     accessCode: text(env.STUDIO_ACCESS_CODE),
     dataDir: text(env.DATA_DIR, '.data'),
+    publicUrl: text(env.PUBLIC_BASE_URL, 'http://localhost:3100'),
   };
 }
 
