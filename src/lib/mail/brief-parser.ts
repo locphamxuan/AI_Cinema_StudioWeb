@@ -4,7 +4,7 @@ import type { MailAttachment, MailMessage } from './types';
 const BRIEF_SUBJECT = /^\[AI Cinema\] Đơn đặt hàng sản xuất phim\b/u;
 const TITLE_AND_SCOPE = /sản xuất phim "(.+)" \((.+)\) gồm (\d+) tập/u;
 const FEE = /Phí sản xuất: (\d+) Token \(= (\d+) VND\)/u;
-const CONTACT = /Đầu mối: (.+?) — (\S+@\S+)/u;
+const CONTACT = /Đầu mối: (.+?) - (\S+@\S+)/u;
 const GREETING = /^Kính gửi (.+),$/mu;
 const BRIEF_FILE = /^brief-.+\.pdf$/iu;
 

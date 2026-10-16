@@ -19,7 +19,7 @@ function brief(id: string, title: string, scope: string, episodes: number, token
       'Chi tiết từng tập và hạn giao nằm trong brief PDF đính kèm, kèm kịch bản và tài liệu tham khảo.',
       'Khi hoàn tất, vui lòng gửi phim đã soạn sẵn qua email cho đầu mối bên dưới.',
       '',
-      'Đầu mối: Nguyễn Thị Creator — creator01@aicinema.com',
+      'Đầu mối: Nguyễn Thị Creator - creator01@aicinema.com',
     ].join('\n'),
     attachments: [
       { id: `${id}-brief`, fileName: `brief-${id}.pdf`, contentType: 'application/pdf', sizeBytes: BRIEF_PDF.length },

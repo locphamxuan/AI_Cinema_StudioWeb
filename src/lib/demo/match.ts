@@ -29,7 +29,7 @@ export function fitDelivery(delivery: Delivery, count: number): Delivery {
   if (count <= 0 || delivery.episodes.length === count) return delivery;
   const episodes = Array.from({ length: count }, (_, i) => {
     const source = delivery.episodes[i % delivery.episodes.length];
-    return i < delivery.episodes.length ? source : { ...source, title: `Tập ${i + 1} — ${source.title}` };
+    return i < delivery.episodes.length ? source : { ...source, title: `Tập ${i + 1} - ${source.title}` };
   });
   return { ...delivery, episodes };
 }

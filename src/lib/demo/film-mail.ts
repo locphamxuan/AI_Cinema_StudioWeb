@@ -10,7 +10,7 @@ function minutes(seconds: number): string {
 
 /** The subject of the mail that hands a film back, so the Creator can tell the versions apart. */
 export function filmSubject(brief: Pick<Brief, 'movieTitle' | 'scope'>, delivery: Pick<Delivery, 'version' | 'label'>): string {
-  return `[Studio] Giao phim "${brief.movieTitle}" (${brief.scope}) — ${delivery.label} ${delivery.version}`;
+  return `[Studio] Giao phim "${brief.movieTitle}" (${brief.scope}) - ${delivery.label} ${delivery.version}`;
 }
 
 /**
@@ -26,7 +26,7 @@ export function composeFilmMail(input: {
 }): OutgoingMail {
   const { brief, project, delivery, script, studioName } = input;
   const lines = delivery.episodes.map(
-    (episode, i) => `Tập ${i + 1} — ${episode.title} (${minutes(episode.durationSeconds)})\n  Tải về: ${episode.url}`,
+    (episode, i) => `Tập ${i + 1} - ${episode.title} (${minutes(episode.durationSeconds)})\n  Tải về: ${episode.url}`,
   );
   const text = [
     `Chào ${brief.contactName},`,

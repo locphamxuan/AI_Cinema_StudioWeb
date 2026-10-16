@@ -27,7 +27,7 @@ function ProjectCard({ project, general }: { project: DemoProject; general?: boo
               {delivery.episodes.map((episode, i) => (
                 <li key={`${episode.url}-${i}`} className="flex justify-between gap-3">
                   <span className="truncate">
-                    Tập {i + 1} — {episode.title}
+                    Tập {i + 1} - {episode.title}
                   </span>
                   <span className="shrink-0 text-muted">{formatDuration(episode.durationSeconds)}</span>
                 </li>

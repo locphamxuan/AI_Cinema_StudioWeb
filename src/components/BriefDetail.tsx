@@ -35,12 +35,12 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
           <div className="flex gap-2">
             <dt className="w-32 shrink-0 text-muted">Đầu mối AI Cinema</dt>
             <dd>
-              {brief.contactName} — {brief.contactEmail}
+              {brief.contactName} - {brief.contactEmail}
             </dd>
           </div>
           <div className="flex gap-2">
             <dt className="w-32 shrink-0 text-muted">Phí sản xuất</dt>
-            <dd>{brief.feeTokens === null ? '—' : `${formatNumber(brief.feeTokens)} Token (${formatNumber(brief.feeVnd)} ₫)`}</dd>
+            <dd>{brief.feeTokens === null ? '-' : `${formatNumber(brief.feeTokens)} Token (${formatNumber(brief.feeVnd)} ₫)`}</dd>
           </div>
         </dl>
         <div>
@@ -77,7 +77,7 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
           <ul className="space-y-1 text-sm">
             {sent.map((record) => (
               <li key={record.id}>
-                {formatDateTime(record.sentAt)} — bản {record.version}, {record.episodeCount} tập, tới {record.to}
+                {formatDateTime(record.sentAt)} - bản {record.version}, {record.episodeCount} tập, tới {record.to}
               </li>
             ))}
           </ul>

@@ -73,7 +73,7 @@ export function ReplyPanel({
         <p className="text-sm text-muted">
           Studio không sản xuất video: gửi bản phim đã soạn sẵn cho {contactName} ({contactEmail}) qua email. Creator tải phim và upload lên AI Cinema.
         </p>
-        {generic && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">Chưa có phim soạn sẵn riêng cho dự án này — dùng bộ phim mẫu của Studio.</p>}
+        {generic && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">Chưa có phim soạn sẵn riêng cho dự án này - dùng bộ phim mẫu của Studio.</p>}
       </div>
 
       <fieldset className="space-y-2">
@@ -97,7 +97,7 @@ export function ReplyPanel({
           {chosen.episodes.map((episode, i) => (
             <li key={`${episode.title}-${i}`} className="flex justify-between gap-3">
               <span className="truncate">
-                Tập {i + 1} — {episode.title}
+                Tập {i + 1} - {episode.title}
               </span>
               <span className="shrink-0 text-muted">{formatDuration(episode.durationSeconds)}</span>
             </li>
