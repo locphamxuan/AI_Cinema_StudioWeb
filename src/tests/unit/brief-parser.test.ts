@@ -43,6 +43,11 @@ describe('hand-off mail (what AI Cinema sends a studio)', () => {
     expect(parseBrief(message)?.contactEmail).toBe('creator01@aicinema.com');
   });
 
+  it('still reads older briefs that put an em dash before the address', () => {
+    const message = { ...first, text: first.text.replace(' - creator01@aicinema.com', ' — creator01@aicinema.com') };
+    expect(parseBrief(message)?.contactEmail).toBe('creator01@aicinema.com');
+  });
+
   it('is not fooled by another mail or a brief that does not say whom to answer', () => {
     expect(parseBrief({ ...first, subject: 'Chào mừng bạn' })).toBeNull();
     expect(parseBrief({ ...first, text: first.text.replace(/Đầu mối:.*/u, '') })).toBeNull();
