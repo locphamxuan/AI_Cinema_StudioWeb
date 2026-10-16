@@ -4,12 +4,16 @@ import type { DemoCatalog } from '@/lib/demo/catalog';
 import { formatBytes, formatDateTime, formatNumber } from '@/lib/format';
 import type { BriefRow } from '@/lib/studio';
 import { CARD } from './common';
+import { partName } from '@/lib/upload-mail';
 import { ReplyPanel } from './ReplyPanel';
+import { ReplyTabs } from './ReplyTabs';
+import { UploadReplyPanel } from './UploadReplyPanel';
 
 /** One hand-off mail in full: what is ordered, who to answer, the attachments, and the films to send back. */
 export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCatalog }) {
   const { brief, sent } = row;
   const { specific, deliveries } = deliveriesFor(brief, catalog);
+  const parts = Array.from({ length: brief.episodeCount }, (_, i) => partName(brief, i + 1));
   const views = deliveries.map((delivery) => ({
     version: delivery.version,
     label: delivery.label,
@@ -69,7 +73,20 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
         </div>
       </section>
 
-      <ReplyPanel messageId={brief.messageId} contactName={brief.contactName} contactEmail={brief.contactEmail} deliveries={views} generic={!specific} />
+      <ReplyTabs
+        upload={
+          <UploadReplyPanel
+            messageId={brief.messageId}
+            contactName={brief.contactName}
+            contactEmail={brief.contactEmail}
+            subjectPrefix={`[Studio] Giao phim "${brief.movieTitle}" (${brief.scope})`}
+            partNames={parts}
+          />
+        }
+        prepared={
+          <ReplyPanel messageId={brief.messageId} contactName={brief.contactName} contactEmail={brief.contactEmail} deliveries={views} generic={!specific} partNames={parts} />
+        }
+      />
 
       {sent.length > 0 && (
         <section className={`${CARD} p-5`} aria-label="Đã gửi cho đơn này">
@@ -77,7 +94,13 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
           <ul className="space-y-1 text-sm">
             {sent.map((record) => (
               <li key={record.id}>
-                {formatDateTime(record.sentAt)} - bản {record.version}, {record.episodeCount} tập, tới {record.to}
+                {formatDateTime(record.sentAt)} - {record.label ? `${record.label} ` : 'bản '}{record.version}, {record.episodeCount} tập, tới {record.to}
+                {record.source === 'upload' ? ' · video tải từ máy' : ' · phim soạn sẵn'}
+                {record.files && record.files.length > 0 && (
+                  <span className="block text-xs text-muted">
+                    {record.files.map((file) => `${partName(brief, file.episode)}: ${file.fileName} (${formatBytes(file.sizeBytes)})`).join(' · ')}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

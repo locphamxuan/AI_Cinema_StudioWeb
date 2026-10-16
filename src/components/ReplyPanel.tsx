@@ -25,6 +25,7 @@ export function ReplyPanel({
   contactEmail,
   deliveries,
   generic,
+  partNames,
 }: {
   messageId: string;
   contactName: string;
@@ -32,6 +33,8 @@ export function ReplyPanel({
   deliveries: DeliveryView[];
   /** The films are the studio's general ones, not made for this title. */
   generic: boolean;
+  /** What each ordered episode is called ("Tập 1", or "Phần 2 (trọn bộ)" for a one-episode order). */
+  partNames?: string[];
 }) {
   const router = useRouter();
   const [version, setVersion] = useState(deliveries[0]?.version ?? '');
@@ -97,7 +100,7 @@ export function ReplyPanel({
           {chosen.episodes.map((episode, i) => (
             <li key={`${episode.title}-${i}`} className="flex justify-between gap-3">
               <span className="truncate">
-                Tập {i + 1} - {episode.title}
+                {partNames?.[i] ?? `Tập ${i + 1}`} - {episode.title}
               </span>
               <span className="shrink-0 text-muted">{formatDuration(episode.durationSeconds)}</span>
             </li>
