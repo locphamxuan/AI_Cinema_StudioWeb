@@ -103,7 +103,7 @@ describe('handing the film back', () => {
         scope: expect.any(String),
         version: 'v2',
         label: expect.any(String),
-        episodeCount: expect.any(Number),
+        episodes: [1, 2, 3].map((episode) => ({ episode, fileName: expect.any(String), url: expect.stringMatching(/^https?:\/\//) })),
       },
     ]);
   });
@@ -126,7 +126,7 @@ describe('handing the film back', () => {
     vi.stubGlobal('fetch', fetchMock);
     try {
       const notifier = new HttpFilmNotifier({ apiUrl: 'http://be/api/', token: 'tok' });
-      const report = { studioEmail: 's@x.vn', creatorEmail: 'c@x.vn', movieTitle: 'T', scope: 'Mùa 1', version: 'v1', label: 'L', episodeCount: 2 };
+      const report = { studioEmail: 's@x.vn', creatorEmail: 'c@x.vn', movieTitle: 'T', scope: 'Mùa 1', version: 'v1', label: 'L', episodes: [{ episode: 1, fileName: 'ep1.mp4', url: 'http://studio/films/1/ep1.mp4' }] };
       await notifier.filmSent(report);
       expect(fetchMock).toHaveBeenCalledWith(
         'http://be/api/studio-inbound/film-sent',
