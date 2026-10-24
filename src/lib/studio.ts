@@ -4,14 +4,20 @@ import { loadCatalog, loadScript, type DemoCatalog } from './demo/catalog';
 import { composeFilmMail } from './demo/film-mail';
 import { deliveriesFor } from './demo/match';
 import { parseBrief, isBriefSubject, type Brief } from './mail/brief-parser';
-import { HttpFilmNotifier, MemoryNotifier, type FilmNotifier, type FilmSentReport } from './mail/film-notifier';
+import {
+  HttpFilmNotifier,
+  MemoryNotifier,
+  type FilmNotifier,
+  type FilmSentEpisode,
+  type FilmSentReport,
+} from './mail/film-notifier';
 import { FixtureInbox } from './mail/fixtures';
 import { ImapInbox } from './mail/imap-inbox';
 import { MailtrapInbox } from './mail/mailtrap-inbox';
 import type { Compose } from './mail/compose';
 import { MemorySender, SmtpSender } from './mail/smtp-sender';
 import type { MailInbox, MailSender, OutgoingMail } from './mail/types';
-import { readFilm } from './films';
+import { filmUrl, readFilm } from './films';
 import { appendSent, readSent, sentFor, type SentRecord } from './sent-log';
 import { composeUploadMail, type UploadedEpisode } from './upload-mail';
 
@@ -122,7 +128,8 @@ export async function replyWithFilm(
     studioName: services.config.fromName,
     compose: compose ?? undefined,
   });
-  return deliver(services, brief, mail, {
+  const links = delivery.episodes.map((episode, i) => ({ episode: i + 1, fileName: episode.title, url: episode.url }));
+  return deliver(services, brief, mail, links, {
     source: 'prepared',
     version: delivery.version,
     label: delivery.label,
@@ -160,7 +167,12 @@ export async function replyWithUpload(
     publicUrl: services.config.publicUrl,
     compose: request.compose ?? undefined,
   });
-  return deliver(services, brief, mail, {
+  const links = episodes.map(({ episode, film }) => ({
+    episode,
+    fileName: film.fileName,
+    url: filmUrl(services.config.publicUrl, film),
+  }));
+  return deliver(services, brief, mail, links, {
     source: 'upload',
     version: delivery.version,
     label: delivery.label,
@@ -190,6 +202,7 @@ async function deliver(
   services: StudioServices,
   brief: Brief,
   mail: OutgoingMail,
+  links: FilmSentEpisode[],
   sent: Pick<SentRecord, 'source' | 'version' | 'label' | 'episodeCount' | 'files'>,
 ): Promise<SentRecord & { aiCinema: AiCinemaNotice }> {
   try {
@@ -215,7 +228,7 @@ async function deliver(
     scope: brief.scope,
     version: sent.version,
     label: sent.label ?? '',
-    episodeCount: sent.episodeCount,
+    episodes: links,
   });
   return { ...record, aiCinema };
 }

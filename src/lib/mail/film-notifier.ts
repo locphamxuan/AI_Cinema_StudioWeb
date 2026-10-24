@@ -1,6 +1,13 @@
 import type { AiCinemaConfig } from '../config';
 
-/** What AI Cinema is told once a film is mailed to the Creator: enough to find the hand-off, nothing more. */
+/** One ordered episode of the mail: its 1-based position in the order and the link the Creator downloads it from. */
+export interface FilmSentEpisode {
+  episode: number;
+  fileName: string;
+  url: string;
+}
+
+/** What AI Cinema is told once a film is mailed to the Creator: the hand-off it answers and a link per episode. */
 export interface FilmSentReport {
   studioEmail: string;
   creatorEmail: string;
@@ -8,7 +15,7 @@ export interface FilmSentReport {
   scope: string;
   version: string;
   label: string;
-  episodeCount: number;
+  episodes: FilmSentEpisode[];
 }
 
 /** Tells AI Cinema that a film went out, so the Creator and Reviewer see it in the app. */
