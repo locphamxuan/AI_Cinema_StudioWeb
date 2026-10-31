@@ -14,11 +14,7 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
   const { brief, sent } = row;
   const { specific, deliveries } = deliveriesFor(brief, catalog);
   const parts = Array.from({ length: brief.episodeCount }, (_, i) => partName(brief, i + 1));
-  const people = {
-    contact: { name: brief.contactName, email: brief.contactEmail },
-    coSenders: brief.coSenders,
-    owners: brief.episodeOwners,
-  };
+  const contact = { name: brief.contactName, email: brief.contactEmail };
   const subjectPrefix = `[Studio] Giao phim "${brief.movieTitle}" (${brief.scope})`;
   const views = deliveries.map((delivery) => ({
     version: delivery.version,
@@ -48,12 +44,6 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
               {brief.contactName} - {brief.contactEmail}
             </dd>
           </div>
-          {brief.coSenders.length > 0 && (
-            <div className="flex gap-2">
-              <dt className="w-32 shrink-0 text-muted">Đồng gửi</dt>
-              <dd>{brief.coSenders.map((person) => `${person.name} - ${person.email}`).join(', ')}</dd>
-            </div>
-          )}
           <div className="flex gap-2">
             <dt className="w-32 shrink-0 text-muted">Phí sản xuất</dt>
             <dd>{brief.feeTokens === null ? '-' : `${formatNumber(brief.feeTokens)} Token (${formatNumber(brief.feeVnd)} ₫)`}</dd>
@@ -87,12 +77,12 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
 
       <ReplyTabs
         upload={
-          <UploadReplyPanel messageId={brief.messageId} people={people} subjectPrefix={subjectPrefix} partNames={parts} />
+          <UploadReplyPanel messageId={brief.messageId} contact={contact} subjectPrefix={subjectPrefix} partNames={parts} />
         }
         prepared={
           <ReplyPanel
             messageId={brief.messageId}
-            people={people}
+            contact={contact}
             subjectPrefix={subjectPrefix}
             deliveries={views}
             generic={!specific}
@@ -108,7 +98,6 @@ export function BriefDetail({ row, catalog }: { row: BriefRow; catalog: DemoCata
             {sent.map((record) => (
               <li key={record.id}>
                 {formatDateTime(record.sentAt)} - {record.label ? `${record.label} ` : 'bản '}{record.version}, {record.episodeCount} tập, tới {record.to}
-                {record.cc?.length ? `, CC ${record.cc.join(', ')}` : ''}
                 {record.source === 'upload' ? ' · video tải từ máy' : ' · phim soạn sẵn'}
                 {record.files && record.files.length > 0 && (
                   <span className="block text-xs text-muted">
