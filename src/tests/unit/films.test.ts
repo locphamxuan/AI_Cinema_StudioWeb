@@ -58,11 +58,6 @@ describe('the mail of uploaded films', () => {
     episodeCount: 3,
     contactName: 'Creator Một',
     contactEmail: 'creator01@aicinema.com',
-    coSenders: [{ name: 'Creator Hai', email: 'creator02@aicinema.com' }],
-    episodeOwners: [
-      { episodeNumber: 1, name: 'Creator Một', email: 'creator01@aicinema.com' },
-      { episodeNumber: 2, name: 'Creator Hai', email: 'creator02@aicinema.com' },
-    ],
   } as Brief;
   const film = (id: string, fileName: string) => ({ id, fileName, contentType: 'video/mp4', sizeBytes: 2048, uploadedAt: '' });
 
@@ -96,19 +91,12 @@ describe('the mail of uploaded films', () => {
     expect(mail.text).toContain('Tập 3 gửi sau hai ngày.');
   });
 
-  it('CCs the co-senders and says who holds each episode', () => {
+  it('goes to the lead Creator alone, under the subject the studio wrote (BR-67)', () => {
     const delivery = { version: 'v1', label: 'Bản giao đầu', note: '', episodes: [{ episode: 2, film: film('b', 'tap-2.mp4') }] };
-    const mail = composeUploadMail({ brief, delivery, studioName: 'Studio', publicUrl: 'https://studio.example' });
-    expect(mail.cc).toEqual(['creator02@aicinema.com']);
+    const mail = composeUploadMail({ brief, delivery, studioName: 'Studio', publicUrl: 'https://studio.example', subject: 'Tập 2' });
+    expect(mail).toMatchObject({ to: 'creator01@aicinema.com', subject: 'Tập 2' });
+    expect(mail).not.toHaveProperty('cc');
     expect(mail.text).toContain('Chào Creator Một,');
-    expect(mail.text).toContain('Tập 2 - tap-2.mp4 (2.0 KB)\n  Phụ trách: Creator Hai <creator02@aicinema.com>');
-  });
-
-  it('follows the envelope the studio wrote, greeting whom it goes to', () => {
-    const delivery = { version: 'v1', label: 'Bản giao đầu', note: '', episodes: [{ episode: 2, film: film('b', 'tap-2.mp4') }] };
-    const compose = { to: 'creator02@aicinema.com', cc: ['creator01@aicinema.com'], subject: 'Tập 2' };
-    const mail = composeUploadMail({ brief, delivery, studioName: 'Studio', publicUrl: 'https://studio.example', compose });
-    expect(mail).toMatchObject(compose);
-    expect(mail.text).toContain('Chào Creator Hai,');
+    expect(mail.text).toContain('Tập 2 - tap-2.mp4 (2.0 KB)\n  Tải về:');
   });
 });

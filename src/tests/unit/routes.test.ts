@@ -40,17 +40,19 @@ describe('POST /api/messages/:id/reply', () => {
     expect(await readSent(dataDir)).toHaveLength(1);
   });
 
-  it('sends to the To and CC the studio wrote, and records the CC', async () => {
-    const compose = { to: 'phu@aicinema.com', cc: ['creator01@aicinema.com'], subject: 'Tập 2 của anh Phụ' };
+  it('mails the lead Creator even when the request names a co-Creator, keeping the subject (BR-67)', async () => {
+    const compose = { to: 'phu@aicinema.com', cc: ['ba@aicinema.com'], subject: 'Tập 2 bản sửa' };
     const response = await reply(post({ version: 'v1', compose }), ids('1001'));
     expect(response.status).toBe(201);
-    expect(await response.json()).toMatchObject({ to: 'phu@aicinema.com', cc: ['creator01@aicinema.com'], subject: 'Tập 2 của anh Phụ' });
+    const record = (await response.json()) as Record<string, unknown>;
+    expect(record).toMatchObject({ to: 'creator01@aicinema.com', subject: 'Tập 2 bản sửa' });
+    expect(record).not.toHaveProperty('cc');
   });
 
-  it('refuses an envelope with a wrong address', async () => {
-    const response = await reply(post({ version: 'v1', compose: { to: 'nope', cc: [], subject: 'S' } }), ids('1001'));
+  it('refuses an empty subject', async () => {
+    const response = await reply(post({ version: 'v1', compose: { subject: ' ' } }), ids('1001'));
     expect(response.status).toBe(400);
-    expect(((await response.json()) as { error: string }).error).toContain('Tới');
+    expect(((await response.json()) as { error: string }).error).toContain('Tiêu đề');
   });
 
   it('asks for a version, and refuses one that does not exist', async () => {

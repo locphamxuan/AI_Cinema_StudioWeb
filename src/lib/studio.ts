@@ -14,7 +14,6 @@ import {
 import { FixtureInbox } from './mail/fixtures';
 import { ImapInbox } from './mail/imap-inbox';
 import { MailtrapInbox } from './mail/mailtrap-inbox';
-import type { Compose } from './mail/compose';
 import { MemorySender, SmtpSender } from './mail/smtp-sender';
 import type { MailInbox, MailSender, OutgoingMail } from './mail/types';
 import { filmUrl, readFilm } from './films';
@@ -113,7 +112,7 @@ export async function replyWithFilm(
   services: StudioServices,
   messageId: string,
   version: string,
-  compose?: Compose | null,
+  subject?: string | null,
 ): Promise<SentRecord & { aiCinema: AiCinemaNotice }> {
   const { brief } = await getBrief(services, messageId);
   const { project, deliveries } = deliveriesFor(brief, await services.catalog());
@@ -126,7 +125,7 @@ export async function replyWithFilm(
     delivery,
     script: await loadScript(project),
     studioName: services.config.fromName,
-    compose: compose ?? undefined,
+    subject,
   });
   const links = delivery.episodes.map((episode, i) => ({ episode: i + 1, fileName: episode.title, url: episode.url }));
   return deliver(services, brief, mail, links, {
@@ -143,8 +142,8 @@ export interface UploadReplyRequest {
   label: string;
   note: string;
   episodes: { episode: number; filmId: string }[];
-  /** To, CC and subject as the studio wrote them; the brief's contact and co-senders otherwise. */
-  compose?: Compose | null;
+  /** The subject the studio wrote; the mail always goes to the lead Creator named in the brief. */
+  subject?: string | null;
 }
 
 /** Hands back the videos the studio uploaded from its own machine, one download link per ordered episode. */
@@ -165,7 +164,7 @@ export async function replyWithUpload(
     delivery,
     studioName: services.config.fromName,
     publicUrl: services.config.publicUrl,
-    compose: request.compose ?? undefined,
+    subject: request.subject,
   });
   const links = episodes.map(({ episode, film }) => ({
     episode,
@@ -214,7 +213,6 @@ async function deliver(
     id: randomUUID(),
     messageId: brief.messageId,
     to: mail.to,
-    ...(mail.cc?.length ? { cc: mail.cc } : {}),
     subject: mail.subject,
     movieTitle: brief.movieTitle,
     sentAt: new Date().toISOString(),
