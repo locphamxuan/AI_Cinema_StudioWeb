@@ -54,7 +54,7 @@ describe('hand-off mail (what AI Cinema sends a studio)', () => {
     expect(parseBrief({ ...first, text: 'Nội dung khác' })).toBeNull();
   });
 
-  it('reads the co-senders to CC and who holds each episode', () => {
+  it('ignores the team lines of older briefs: the studio answers the lead Creator only (BR-67)', () => {
     const team = [
       'Đồng gửi: Trần Phụ <Phu@AICinema.com>, Lê Ba <ba@aicinema.com>',
       'Phân công tập:',
@@ -63,19 +63,8 @@ describe('hand-off mail (what AI Cinema sends a studio)', () => {
       '- Tập 3: Lê Ba - ba@aicinema.com',
     ].join('\r\n');
     const brief = parseBrief({ ...first, text: `${first.text}\r\n${team}` })!;
-    expect(brief.coSenders).toEqual([
-      { name: 'Trần Phụ', email: 'phu@aicinema.com' },
-      { name: 'Lê Ba', email: 'ba@aicinema.com' },
-    ]);
-    expect(brief.episodeOwners.map((owner) => [owner.episodeNumber, owner.email])).toEqual([
-      [1, 'creator01@aicinema.com'],
-      [2, 'phu@aicinema.com'],
-      [3, 'ba@aicinema.com'],
-    ]);
-  });
-
-  it('has nobody to CC on a brief from before "Đồng gửi"', () => {
-    expect(parseBrief(first)).toMatchObject({ coSenders: [], episodeOwners: [] });
+    expect(brief).toEqual(parseBrief(first));
+    expect(Object.keys(brief)).not.toContain('coSenders');
   });
 
   it('copes with a brief that carries no fee line or PDF', () => {

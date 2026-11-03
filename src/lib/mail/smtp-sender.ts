@@ -15,7 +15,6 @@ export class SmtpSender implements MailSender {
     await transport.sendMail({
       from: { name: this.from.name, address: this.from.address },
       to: mail.to,
-      cc: mail.cc?.length ? mail.cc : undefined,
       subject: mail.subject,
       text: mail.text,
       attachments: mail.attachments,

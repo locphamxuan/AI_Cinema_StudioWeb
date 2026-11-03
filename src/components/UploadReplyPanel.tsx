@@ -6,7 +6,7 @@ import { CheckCircle2, Send, Trash2, Upload } from 'lucide-react';
 import { formatBytes } from '@/lib/format';
 import { CARD, ErrorCard } from './common';
 import { ComposeFields } from './ComposeFields';
-import { composePayload, defaultDraft, type ComposePeople } from './compose-draft';
+import { composePayload, defaultDraft, type ComposeContact } from './compose-draft';
 import { uploadFilm, type UploadedFilm } from './upload-film';
 
 const VERSIONS = [
@@ -25,12 +25,12 @@ type Slot = { state: 'empty' } | { state: 'uploading'; name: string; percent: nu
  */
 export function UploadReplyPanel({
   messageId,
-  people,
+  contact,
   subjectPrefix,
   partNames,
 }: {
   messageId: string;
-  people: ComposePeople;
+  contact: ComposeContact;
   /** `[Studio] Giao phim "…" (…)`: the mail subject before the version. */
   subjectPrefix: string;
   /** What each ordered episode is called, in order ("Tập 1", or "Phần 2 (trọn bộ)" for a one-episode order). */
@@ -41,7 +41,7 @@ export function UploadReplyPanel({
   const [version, setVersion] = useState(VERSIONS[0].version);
   const [label, setLabel] = useState(VERSIONS[0].label);
   const [note, setNote] = useState('');
-  const [draft, setDraft] = useState(() => defaultDraft(people));
+  const [draft, setDraft] = useState(() => defaultDraft());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -93,7 +93,7 @@ export function UploadReplyPanel({
       return;
     }
     const body = (await response.json().catch(() => null)) as { aiCinema?: { status: string; error?: string } } | null;
-    setDone(`Đã gửi ${ready.length} video (${version}) tới ${[compose.to, ...compose.cc].join(', ')}.`);
+    setDone(`Đã gửi ${ready.length} video (${version}) tới ${contact.email}.`);
     if (body?.aiCinema?.status === 'failed') {
       setWarning(`Email đã gửi nhưng chưa báo được cho AI Cinema (${body.aiCinema.error ?? 'lỗi không rõ'}); Creator sẽ chưa thấy ở tab Studio.`);
     }
@@ -111,7 +111,6 @@ export function UploadReplyPanel({
           <li key={partNames[i]} className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3 text-sm">
             <span className="w-36 shrink-0">
               <span className="block font-semibold">{partNames[i]}</span>
-              {people.owners[i] && <span className="block text-xs text-muted">{people.owners[i].name}</span>}
             </span>
             {slot.state === 'empty' && (
               <label className="flex cursor-pointer items-center gap-2 text-accent hover:underline">
@@ -164,7 +163,7 @@ export function UploadReplyPanel({
         <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} maxLength={2000} className="w-full rounded-lg border border-border bg-transparent px-3 py-2" />
       </label>
 
-      <ComposeFields people={people} partNames={partNames} draft={draft} autoSubject={autoSubject} onChange={setDraft} />
+      <ComposeFields contact={contact} draft={draft} autoSubject={autoSubject} onChange={setDraft} />
       <p className="text-xs text-muted" aria-label="Số tập trong thư">
         Gồm {ready.length}/{partNames.length} tập
         {ready.length > 0 && ready.length < partNames.length && ' (các tập còn lại gửi ở thư sau)'}
@@ -184,7 +183,7 @@ export function UploadReplyPanel({
       <button
         type="button"
         onClick={send}
-        disabled={busy || uploading || ready.length === 0 || !label.trim() || !draft.to.trim()}
+        disabled={busy || uploading || ready.length === 0 || !label.trim()}
         className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         <Send className="h-4 w-4" aria-hidden="true" /> {busy ? 'Đang gửi…' : `Gửi ${ready.length || ''} video cho Creator`}

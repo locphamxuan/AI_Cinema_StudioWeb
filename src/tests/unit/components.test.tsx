@@ -50,18 +50,11 @@ describe('BriefList', () => {
 });
 
 describe('ReplyPanel', () => {
-  const people = {
-    contact: { name: 'Nguyễn Thị Creator', email: 'creator01@aicinema.com' },
-    coSenders: [{ name: 'Trần Phụ', email: 'phu@aicinema.com' }],
-    owners: [
-      { episodeNumber: 1, name: 'Nguyễn Thị Creator', email: 'creator01@aicinema.com' },
-      { episodeNumber: 2, name: 'Trần Phụ', email: 'phu@aicinema.com' },
-    ],
-  };
+  const contact = { name: 'Nguyễn Thị Creator', email: 'creator01@aicinema.com' };
   const panel = (generic = false) => (
     <ReplyPanel
       messageId="1001"
-      people={people}
+      contact={contact}
       subjectPrefix='[Studio] Giao phim "Căn Hộ Số 13" (Mùa 1)'
       deliveries={deliveries}
       generic={generic}
@@ -94,30 +87,24 @@ describe('ReplyPanel', () => {
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(String(init.body))).toEqual({
       version: 'v2',
-      compose: {
-        to: 'creator01@aicinema.com',
-        cc: ['phu@aicinema.com'],
-        subject: '[Studio] Giao phim "Căn Hộ Số 13" (Mùa 1) - Bản sửa theo góp ý v2',
-      },
+      compose: { subject: '[Studio] Giao phim "Căn Hộ Số 13" (Mùa 1) - Bản sửa theo góp ý v2' },
     });
-    expect(await screen.findByRole('status')).toHaveTextContent('Đã gửi phim v2 tới creator01@aicinema.com, phu@aicinema.com');
+    expect(await screen.findByRole('status')).toHaveTextContent('Đã gửi phim v2 tới creator01@aicinema.com.');
     expect(refresh).toHaveBeenCalled();
   });
 
-  it('addresses one Creator with the episodes they hold, keeping the contact in CC', async () => {
+  it('mails only the lead Creator: no CC and no way to address a co-Creator (BR-67)', async () => {
     const fetchMock = stubFetch(201, { id: 'r1' });
     render(panel());
-    expect(screen.getByLabelText('Phân công tập')).toHaveTextContent('Tập 2: Trần Phụ <phu@aicinema.com>');
-
-    await userEvent.click(screen.getByRole('button', { name: 'Chỉ gửi Trần Phụ (Tập 2)' }));
-    expect(screen.getByLabelText('Tới')).toHaveValue('phu@aicinema.com');
-    expect(screen.getByLabelText(/^CC/)).toHaveValue('creator01@aicinema.com');
+    expect(screen.getByLabelText('Người nhận')).toHaveTextContent('Nguyễn Thị Creator <creator01@aicinema.com>');
+    expect(screen.queryByLabelText(/^CC/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Chỉ gửi/ })).not.toBeInTheDocument();
     await userEvent.clear(screen.getByLabelText('Tiêu đề'));
-    await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Tập 2 của anh Phụ');
+    await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Tập 2 bản sửa');
     await userEvent.click(screen.getByRole('button', { name: 'Gửi lại phim' }));
 
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(JSON.parse(String(init.body)).compose).toEqual({ to: 'phu@aicinema.com', cc: ['creator01@aicinema.com'], subject: 'Tập 2 của anh Phụ' });
+    expect(JSON.parse(String(init.body)).compose).toEqual({ subject: 'Tập 2 bản sửa' });
   });
 
   it('shows the reason when sending fails', async () => {

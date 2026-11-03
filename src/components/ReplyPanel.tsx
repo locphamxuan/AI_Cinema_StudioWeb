@@ -6,7 +6,7 @@ import { CheckCircle2, Film, Send } from 'lucide-react';
 import { formatDuration } from '@/lib/format';
 import { CARD, ErrorCard } from './common';
 import { ComposeFields } from './ComposeFields';
-import { composePayload, defaultDraft, type ComposePeople } from './compose-draft';
+import { composePayload, defaultDraft, type ComposeContact } from './compose-draft';
 
 export interface DeliveryView {
   version: string;
@@ -23,14 +23,14 @@ export interface DeliveryView {
  */
 export function ReplyPanel({
   messageId,
-  people,
+  contact,
   subjectPrefix,
   deliveries,
   generic,
   partNames = [],
 }: {
   messageId: string;
-  people: ComposePeople;
+  contact: ComposeContact;
   /** `[Studio] Giao phim "…" (…)`: the mail subject before the version. */
   subjectPrefix: string;
   deliveries: DeliveryView[];
@@ -41,7 +41,7 @@ export function ReplyPanel({
 }) {
   const router = useRouter();
   const [version, setVersion] = useState(deliveries[0]?.version ?? '');
-  const [draft, setDraft] = useState(() => defaultDraft(people));
+  const [draft, setDraft] = useState(() => defaultDraft());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export function ReplyPanel({
     setBusy(false);
     if (response.ok) {
       const body = (await response.json().catch(() => null)) as { aiCinema?: { status: string; error?: string } } | null;
-      setDone(`Đã gửi phim ${version} tới ${[compose.to, ...compose.cc].join(', ')}.`);
+      setDone(`Đã gửi phim ${version} tới ${contact.email}.`);
       if (body?.aiCinema?.status === 'failed') {
         setWarning(`Email đã gửi nhưng chưa báo được cho AI Cinema (${body.aiCinema.error ?? 'lỗi không rõ'}); Reviewer sẽ chưa thấy ở tab Studio.`);
       }
@@ -80,7 +80,7 @@ export function ReplyPanel({
           <Film className="h-4 w-4 text-accent" aria-hidden="true" /> Gửi lại phim
         </h2>
         <p className="text-sm text-muted">
-          Studio không sản xuất video: gửi bản phim đã soạn sẵn cho {people.contact.name} ({people.contact.email}) qua email. Creator tải phim và upload lên AI Cinema.
+          Studio không sản xuất video: gửi bản phim đã soạn sẵn cho {contact.name} ({contact.email}) qua email. Creator tải phim và upload lên AI Cinema.
         </p>
         {generic && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">Chưa có phim soạn sẵn riêng cho dự án này - dùng bộ phim mẫu của Studio.</p>}
       </div>
@@ -114,7 +114,7 @@ export function ReplyPanel({
         </ol>
       )}
 
-      <ComposeFields people={people} partNames={partNames} draft={draft} autoSubject={autoSubject} onChange={setDraft} />
+      <ComposeFields contact={contact} draft={draft} autoSubject={autoSubject} onChange={setDraft} />
 
       {error && <ErrorCard message={error} />}
       {done && (
@@ -130,7 +130,7 @@ export function ReplyPanel({
       <button
         type="button"
         onClick={send}
-        disabled={busy || !chosen || !draft.to.trim()}
+        disabled={busy || !chosen}
         className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         <Send className="h-4 w-4" aria-hidden="true" /> {busy ? 'Đang gửi…' : 'Gửi lại phim'}

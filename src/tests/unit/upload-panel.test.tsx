@@ -22,7 +22,7 @@ const panel = (partNames: string[]) =>
   render(
     <UploadReplyPanel
       messageId="1001"
-      people={{ contact: { name: 'Creator Một', email: 'creator01@aicinema.com' }, coSenders: [], owners: [] }}
+      contact={{ name: 'Creator Một', email: 'creator01@aicinema.com' }}
       subjectPrefix='[Studio] Giao phim "Mưa Sài Gòn" (Mùa 1)'
       partNames={partNames}
     />,
@@ -32,7 +32,7 @@ describe('UploadReplyPanel', () => {
   it('shows a slot per ordered episode and the mail it will send', () => {
     panel(['Phần 1 (trọn bộ)']);
     expect(screen.getByText('Phần 1 (trọn bộ)')).toBeInTheDocument();
-    expect(screen.getByLabelText('Tới')).toHaveValue('creator01@aicinema.com');
+    expect(screen.getByLabelText('Người nhận')).toHaveTextContent('creator01@aicinema.com');
     expect(screen.getByLabelText('Tiêu đề')).toHaveValue('[Studio] Giao phim "Mưa Sài Gòn" (Mùa 1) - Bản giao đầu v1');
     expect(screen.getByRole('button', { name: /video cho Creator/ })).toBeDisabled();
   });
@@ -55,7 +55,7 @@ describe('UploadReplyPanel', () => {
       source: 'upload',
       version: 'v1',
       episodes: [{ episode: 2, filmId: 'film-tap-2.mp4' }],
-      compose: { to: 'creator01@aicinema.com', cc: [] },
+      compose: { subject: '[Studio] Giao phim "Mưa Sài Gòn" (Mùa 1) - Bản giao đầu v1' },
     });
     expect(await screen.findByRole('status')).toHaveTextContent('Đã gửi 1 video (v1) tới creator01@aicinema.com.');
     expect(refresh).toHaveBeenCalled();

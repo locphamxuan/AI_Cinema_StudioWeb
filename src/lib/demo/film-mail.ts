@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { Brief } from '../mail/brief-parser';
-import { defaultCompose, greeting, ownerOf, type Compose } from '../mail/compose';
+import { envelopeFor, greeting } from '../mail/compose';
 import type { OutgoingMail } from '../mail/types';
 import type { Delivery, DemoProject } from './catalog';
 
@@ -24,18 +24,17 @@ export function composeFilmMail(input: {
   delivery: Delivery;
   script: Buffer | null;
   studioName: string;
-  /** The envelope the studio wrote; the brief's contact and co-senders otherwise. */
-  compose?: Compose;
+  /** The subject the studio wrote; the mail always goes to the brief's contact. */
+  subject?: string | null;
 }): OutgoingMail {
   const { brief, project, delivery, script, studioName } = input;
-  const envelope = input.compose ?? defaultCompose(brief, filmSubject(brief, delivery));
+  const envelope = envelopeFor(brief, input.subject, filmSubject(brief, delivery));
   const lines = delivery.episodes.map((episode, i) =>
-    [`Tập ${i + 1} - ${episode.title} (${minutes(episode.durationSeconds)})`, ownerOf(brief, i + 1), `Tải về: ${episode.url}`]
-      .filter(Boolean)
+    [`Tập ${i + 1} - ${episode.title} (${minutes(episode.durationSeconds)})`, `Tải về: ${episode.url}`]
       .join('\n  '),
   );
   const text = [
-    greeting(brief, envelope.to),
+    greeting(brief),
     '',
     `${studioName} gửi lại phim "${brief.movieTitle}" (${brief.scope}) theo đơn đặt hàng của AI Cinema.`,
     `${delivery.label} (${delivery.version}): ${delivery.summary}`,

@@ -2,12 +2,14 @@
 
 The site of the **partner studio**, a third party outside AI Cinema (BR-15, BR-58, BR-59).
 
-- It has **no AI Cinema account** and **never calls the AI Cinema API**. The only link between the two is **email**.
-- It does **not make videos**. The team prepares the films, scripts and revised versions in advance (`demo-data/`).
+- It has **no AI Cinema account**. It talks to AI Cinema by **email**, plus one call that reports each film it mailed (see
+  [Reporting to AI Cinema](#reporting-to-ai-cinema)).
+- It does **not make videos**. A film is either uploaded from the computer or picked from what the team prepared in advance
+  (`demo-data/`).
 - Flow of the demo: the Content Creator hands a project (or a season) off in AI Cinema → AI Cinema emails the brief PDF, the
   script and the material → **this site shows the mail** in its inbox → the studio presses **Gửi lại phim** → the Creator gets an
-  email with download links and the script → the Creator downloads, moves the studio milestone and uploads each episode as a
-  Submission in AI Cinema.
+  email with download links and the script, and this site reports the film to AI Cinema → the Creator sees a notification and
+  the link of each episode, moves the studio milestone and uploads each episode as a Submission in AI Cinema.
 
 ## Run it
 
@@ -32,6 +34,14 @@ AI Cinema (`SMTP_*` of its backend) and this site share one Mailtrap sandbox:
    it lands in the same inbox, where the Creator's side of the demo reads it; the site filters it out by its subject.
 
 Put the secrets in `.env.local` (git-ignored), never in the repository.
+
+### Reporting to AI Cinema
+
+After each film mail this site calls `POST {AI_CINEMA_API_URL}/studio-inbound/film-sent` with the header `x-studio-token`. AI Cinema
+saves the link of each episode and notifies the Creator and the Reviewer; the milestone does not change.
+
+Set `AI_CINEMA_API_URL` and `STUDIO_WEBHOOK_TOKEN`, and use the same token as `STUDIO_WEBHOOK_TOKEN` of AI Cinema's backend. If
+either is empty, nothing is reported and the Creator only gets the email.
 
 ### Access
 
