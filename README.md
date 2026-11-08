@@ -1,74 +1,63 @@
 # AI Cinema — Studio Web
 
-The site of the **partner studio**, a third party outside AI Cinema (BR-15, BR-58, BR-59).
+The working portal of a **partner studio**. A studio has its own `STUDIO` account in AI Cinema and logs in here; every screen
+calls the AI Cinema API with that account, so films are exchanged only inside the platform.
 
-- It has **no AI Cinema account**. It talks to AI Cinema by **email**, plus one call that reports each film it mailed (see
-  [Reporting to AI Cinema](#reporting-to-ai-cinema)).
-- It does **not make videos**. A film is either uploaded from the computer or picked from what the team prepared in advance
-  (`demo-data/`).
-- Flow of the demo: the Content Creator hands a project (or a season) off in AI Cinema → AI Cinema emails the brief PDF, the
-  script and the material → **this site shows the mail** in its inbox → the studio presses **Gửi lại phim** → the Creator gets an
-  email with download links and the script, and this site reports the film to AI Cinema → the Creator sees a notification and
-  the link of each episode, moves the studio milestone and uploads each episode as a Submission in AI Cinema.
+| Screen | What the studio does |
+| --- | --- |
+| Đăng nhập | Logs in with its AI Cinema account. Accounts of any other role are refused. |
+| Tổng quan | Studio details, contracts waiting for it, projects in production, notifications. |
+| Hợp đồng | Every round of each negotiation. Fills in the cost and signs a template, or agrees with / counters the Admin's cost. |
+| Dự án | Final Script, episodes with deadlines and status, latest delivery, the Reviewer's change requests. |
+| Nộp phim | Delivers one episode to the Reviewer (MP4/MOV file or link) with the mandatory AI Disclosure and a proposed AI label. |
+
+A film can be delivered only once the contract carries both signatures and the episode is `AWAITING_MEDIA`, `IN_REVIEW` or
+`CHANGES_REQUESTED`. The API enforces this too and its errors are shown as they come.
 
 ## Run it
 
-Needs Node.js 20.19+.
+Needs Node.js 20.19+ and a running AI Cinema API (`AI-_Cinema_BE`, seeded).
 
 ```bash
 npm ci
-cp .env.example .env.local     # fill in the Mailtrap settings below
+cp .env.example .env.local
 npm run dev                    # http://localhost:3100
 ```
 
-Without a Mailtrap account, `MAIL_SOURCE=fixtures` shows two canned briefs and sends nothing, so the screens can be tried offline.
+Demo account created by the backend seed: `studio@aicinema.com` / `Aicinema@123` (studio "Lumen Studio"). The seed creates no
+contract: the Admin has to approve the Final Script of a project assigned to this studio before one appears here.
 
-### Mailtrap (demo)
+### Environment
 
-AI Cinema (`SMTP_*` of its backend) and this site share one Mailtrap sandbox:
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `AI_CINEMA_API_URL` | `http://localhost:3001/api` | Base URL of the AI Cinema API, with the `/api` prefix. |
+| `COOKIE_SECURE` | `true` in production, otherwise `false` | Session cookies travel over https only. Set `false` to try a production build over plain http. |
 
-1. AI Cinema's backend sends the brief to the studio's address through Mailtrap's SMTP; it lands in the sandbox **inbox**.
-2. This site reads that inbox through Mailtrap's API: set `MAILTRAP_API_TOKEN`, `MAILTRAP_ACCOUNT_ID`, `MAILTRAP_INBOX_ID`.
-   Set `STUDIO_EMAILS` to the studio's address (the one used in AI Cinema's **Studio** catalog) to ignore other mail.
-3. The reply goes out over SMTP (`SMTP_*`) to the Creator named in the brief (`Đầu mối: … — email`). In a Mailtrap sandbox
-   it lands in the same inbox, where the Creator's side of the demo reads it; the site filters it out by its subject.
+## Session
 
-Put the secrets in `.env.local` (git-ignored), never in the repository.
+The tokens live in httpOnly, SameSite=Lax cookies set by this site; page scripts never see them.
 
-### Reporting to AI Cinema
-
-After each film mail this site calls `POST {AI_CINEMA_API_URL}/studio-inbound/film-sent` with the header `x-studio-token`. AI Cinema
-saves the link of each episode and notifies the Creator and the Reviewer; the milestone does not change.
-
-Set `AI_CINEMA_API_URL` and `STUDIO_WEBHOOK_TOKEN`, and use the same token as `STUDIO_WEBHOOK_TOKEN` of AI Cinema's backend. If
-either is empty, nothing is reported and the Creator only gets the email.
-
-### Access
-
-`STUDIO_ACCESS_CODE` asks visitors for a code once (the cookie holds a hash). Leave it empty on a local machine; set it before
-deploying, because the inbox shows the studio's mail.
-
-## The prepared films (`demo-data/`)
-
-`projects.json` maps a film title (case, accents and punctuation do not matter) to its script and its deliveries:
-`v1` = first delivery, `v2` = the fixed one after the Reviewer asked for changes. A project with no entry uses `generic`,
-fitted to the number of episodes ordered. Episode links default to open-licence AI films on Wikimedia Commons (the same
-sources as AI_Cinema_BE's `prisma/catalog-sources.ts`); replace them with the team's own files when needed.
-The file is checked on every load and a mistake names the field. Scripts live in `demo-data/scripts/`.
+- `src/proxy.ts` swaps the refresh token for a new pair shortly before the access token expires. A refresh token works once, so
+  concurrent requests share the refresh already running.
+- Server Actions and the upload route refresh the same way. The upload route is outside the proxy, because the proxy would buffer
+  the body; it streams the file straight to the API.
 
 ## Layout
 
 ```
-demo-data/            prepared films (projects.json) and scripts
 src/
-  app/                pages and route handlers (thin)
-  components/         screens: inbox, order detail, reply panel, film library
+  proxy.ts            session check and token rotation
+  app/
+    login/            login page
+    (portal)/         overview, contracts, projects, film delivery
+    actions/          Server Actions: login, logout, contract moves, notifications
+    api/episodes/     route handler that forwards a film to the API
+  components/         screens and forms
   lib/
-    mail/             hand-off mail parser, Mailtrap inbox, SMTP sender, fixtures
-    demo/             manifest, title matching, the mail that hands a film back
-    studio.ts         use cases: list orders, open one, send a film back
-    sent-log.ts       what was already sent (DATA_DIR/sent.json)
-    access.ts, session.ts, config.ts
+    api/              API client, response types, film upload
+    session/          cookies, rotation, session helpers for pages and mutations
+    domain/           contract, episode and submission rules, Vietnamese labels
   tests/unit/         Vitest
 ```
 
