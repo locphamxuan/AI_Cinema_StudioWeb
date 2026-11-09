@@ -41,18 +41,17 @@ function detailsOf(details: unknown): string[] {
   return [];
 }
 
-/** Reads an error response of the API; a body that is not the API's shape still gives a readable error. */
-export async function toApiError(response: Response): Promise<ApiError> {
-  const body = (await response.json().catch(() => null)) as {
-    error?: { code?: string; message?: string; details?: unknown };
-  } | null;
-  const error = body?.error;
-  return new ApiError(
-    response.status,
-    error?.code ?? `HTTP_${response.status}`,
-    error?.message ?? response.statusText ?? 'Request failed',
-    detailsOf(error?.details),
-  );
+type ErrorBody = { error?: { code?: string; message?: string; details?: unknown } } | null;
+
+/** Builds the error of an API answer from its parsed body; a body that is not the API's shape still gives a readable error. */
+export function apiErrorOf(status: number, body: unknown, fallbackMessage: string): ApiError {
+  const error = (body as ErrorBody)?.error;
+  return new ApiError(status, error?.code ?? `HTTP_${status}`, error?.message ?? fallbackMessage, detailsOf(error?.details));
+}
+
+async function toApiError(response: Response): Promise<ApiError> {
+  const body = await response.json().catch(() => null);
+  return apiErrorOf(response.status, body, response.statusText ?? 'Request failed');
 }
 
 /** Calls `{baseUrl}{path}` and returns its JSON (undefined for 204); throws ApiError on a non-2xx answer. */

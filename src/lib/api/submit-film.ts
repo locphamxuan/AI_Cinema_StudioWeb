@@ -1,24 +1,16 @@
-import { ApiError, describeError } from './http';
+import { apiErrorOf, describeError } from './http';
 import { buildLinkBody, buildUploadForm, type SubmissionInput } from '@/lib/domain/submission';
 
 export type SubmitResult = { ok: true } | { ok: false; error: string; status: number };
 
 function errorOf(status: number, text: string): string {
-  let body: { error?: { code?: string; message?: string; details?: unknown } } | null = null;
+  let body: unknown = null;
   try {
     body = JSON.parse(text);
   } catch {
     body = null;
   }
-  const details = body?.error?.details;
-  return describeError(
-    new ApiError(
-      status,
-      body?.error?.code ?? `HTTP_${status}`,
-      body?.error?.message ?? (status ? 'Request failed' : 'Không kết nối được tới Studio Web'),
-      Array.isArray(details) ? details.map(String) : [],
-    ),
-  );
+  return describeError(apiErrorOf(status, body, status ? 'Request failed' : 'Không kết nối được tới Studio Web'));
 }
 
 /**
