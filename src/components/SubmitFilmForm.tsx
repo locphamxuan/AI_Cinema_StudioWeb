@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Send } from 'lucide-react';
 import { submitFilm } from '@/lib/api/submit-film';
+import { EXPIRED_LOGIN_PATH } from '@/lib/session/paths';
 import { validateSubmission, type SourceMethod, type SubmissionInput } from '@/lib/domain/submission';
 import type { AiDisclosure, LabelType } from '@/lib/api/types';
 import { AiDisclosureFields } from './AiDisclosureFields';
@@ -44,7 +45,7 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
     setProgress(null);
     if (!result.ok) {
       setErrors([result.error]);
-      if (result.status === 401) router.push('/login?expired=1');
+      if (result.status === 401) router.push(EXPIRED_LOGIN_PATH);
       return;
     }
     setDone(true);

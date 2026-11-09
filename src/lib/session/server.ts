@@ -4,9 +4,8 @@ import { getConfig } from '@/lib/config';
 import { ApiError } from '@/lib/api/http';
 import { portalApi, type PortalApi } from '@/lib/api/portal';
 import type { AuthSession } from '@/lib/api/types';
+import { EXPIRED_LOGIN_PATH, LOGIN_PATH } from './paths';
 import { COOKIE, needsRefresh, refreshSession, SESSION_COOKIE_NAMES, sessionCookies } from './tokens';
-
-export const LOGIN_PATH = '/login';
 
 /** Writes a new session (login, refresh): only Server Actions and Route Handlers may call this. */
 export async function saveSession(session: AuthSession): Promise<void> {
@@ -31,7 +30,7 @@ export async function pagePortal(): Promise<PortalApi> {
       try {
         return await (call as (...inner: unknown[]) => Promise<unknown>)(...args);
       } catch (error) {
-        if (error instanceof ApiError && error.status === 401) redirect(`${LOGIN_PATH}?expired=1`);
+        if (error instanceof ApiError && error.status === 401) redirect(EXPIRED_LOGIN_PATH);
         throw error;
       }
     },

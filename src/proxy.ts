@@ -1,11 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getConfig } from '@/lib/config';
+import { LOGIN_PATH } from '@/lib/session/paths';
 import { COOKIE, needsRefresh, refreshSession, SESSION_COOKIE_NAMES, sessionCookies } from '@/lib/session/tokens';
 
-const LOGIN = '/login';
-
 function toLogin(request: NextRequest, expired: boolean): NextResponse {
-  const url = new URL(LOGIN, request.url);
+  const url = new URL(LOGIN_PATH, request.url);
   if (expired) url.searchParams.set('expired', '1');
   const response = NextResponse.redirect(url);
   for (const name of SESSION_COOKIE_NAMES) response.cookies.delete(name);
@@ -19,7 +18,7 @@ function toLogin(request: NextRequest, expired: boolean): NextResponse {
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const access = request.cookies.get(COOKIE.access)?.value;
   const refresh = request.cookies.get(COOKIE.refresh)?.value;
-  const isLogin = request.nextUrl.pathname === LOGIN;
+  const isLogin = request.nextUrl.pathname === LOGIN_PATH;
   const fresh = !needsRefresh(access, request.cookies.get(COOKIE.expires)?.value);
 
   // ?expired=1 means the API refused this token: going back to / would loop between the two pages.

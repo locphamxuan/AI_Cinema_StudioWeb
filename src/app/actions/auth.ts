@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation';
 import { getConfig } from '@/lib/config';
 import { ApiError, describeError } from '@/lib/api/http';
 import { authApi } from '@/lib/api/portal';
-import { clearSession, LOGIN_PATH, saveSession } from '@/lib/session/server';
+import { LOGIN_PATH } from '@/lib/session/paths';
+import { clearSession, saveSession } from '@/lib/session/server';
 import { COOKIE, isStudio, NOT_STUDIO_MESSAGE } from '@/lib/session/tokens';
 
 export interface LoginState {
