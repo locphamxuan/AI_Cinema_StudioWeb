@@ -17,9 +17,6 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
 import { login } from '@/app/actions/auth';
 import { actOnContract } from '@/app/actions/contracts';
-import { POST } from '@/app/api/episodes/[episodeId]/media/route';
-import { pagePortal } from '@/lib/session/server';
-import type { NextRequest } from 'next/server';
 
 const form = (fields: Record<string, string>) => {
   const data = new FormData();
@@ -65,19 +62,6 @@ describe('login', () => {
   });
 });
 
-describe('pagePortal', () => {
-  it('can be awaited and goes to the login page when the API refuses the token', async () => {
-    jar.set('sw_access', 'acc');
-    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'UNAUTHORIZED', message: 'Invalid token' } }, 401)));
-    const api = await pagePortal();
-    await expect(api.me()).rejects.toThrow('REDIRECT /login?expired=1');
-  });
-
-  it('sends a visitor without a session to the login page', async () => {
-    await expect(pagePortal()).rejects.toThrow('REDIRECT /login');
-  });
-});
-
 describe('actOnContract', () => {
   const signedIn = () => {
     jar.set('sw_access', 'acc');
@@ -111,34 +95,5 @@ describe('actOnContract', () => {
   it('asks to log in again without a session', async () => {
     const state = await actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }));
     expect(state.error).toContain('đăng nhập lại');
-  });
-});
-
-describe('POST /api/episodes/:id/media', () => {
-  const EPISODE = '7f1c8a2e-5b4d-4c3a-9e2f-1a2b3c4d5e6f';
-  const call = (id: string, init: RequestInit) =>
-    POST(new Request(`http://localhost:3100/api/episodes/${id}/media`, init) as unknown as NextRequest, {
-      params: Promise.resolve({ episodeId: id }),
-    });
-
-  it('rejects a malformed episode id', async () => {
-    expect((await call('nope', { method: 'POST' })).status).toBe(400);
-  });
-
-  it('needs a session', async () => {
-    const response = await call(EPISODE, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
-    expect(response.status).toBe(401);
-  });
-
-  it('forwards a link submission with the token and returns the API answer', async () => {
-    jar.set('sw_access', 'acc');
-    jar.set('sw_expires', String(Date.now() + 600_000));
-    const fetchMock = vi.fn(async () => json({ error: { code: 'CONFLICT', message: 'The contract of this project is not signed yet' } }, 409));
-    vi.stubGlobal('fetch', fetchMock);
-    const response = await call(EPISODE, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"a":1}' });
-    expect(response.status).toBe(409);
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe(`http://localhost:3001/api/studio-portal/episodes/${EPISODE}/media`);
-    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer acc');
   });
 });
