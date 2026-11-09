@@ -9,7 +9,7 @@ export interface StudioWebConfig {
 
 type Env = Record<string, string | undefined>;
 
-export const DEFAULT_API_URL = 'http://localhost:3001/api';
+const DEFAULT_API_URL = 'http://localhost:3001/api';
 
 export function getConfig(env: Env = process.env): StudioWebConfig {
   const apiUrl = (env.AI_CINEMA_API_URL?.trim() || DEFAULT_API_URL).replace(/\/+$/, '');

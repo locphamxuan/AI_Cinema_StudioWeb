@@ -10,7 +10,7 @@ export const COOKIE = {
   expires: 'sw_expires',
 } as const;
 
-export const STUDIO_ROLE = 'STUDIO';
+const STUDIO_ROLE = 'STUDIO';
 export const NOT_STUDIO_MESSAGE = 'Tài khoản không phải tài khoản Studio.';
 
 /** Refresh tokens live as long as the API keeps them (JWT_REFRESH_TTL_DAYS, 30 days by default). */

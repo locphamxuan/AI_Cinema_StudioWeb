@@ -34,7 +34,7 @@ export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
 };
 
 /** Episode states in which the API accepts a (new) film from the studio. */
-export const SUBMITTABLE_STATUSES: readonly EpisodeStatus[] = ['AWAITING_MEDIA', 'IN_REVIEW', 'CHANGES_REQUESTED'];
+const SUBMITTABLE_STATUSES: readonly EpisodeStatus[] = ['AWAITING_MEDIA', 'IN_REVIEW', 'CHANGES_REQUESTED'];
 
 export type SubmitCheck = { allowed: true } | { allowed: false; reason: string };
 

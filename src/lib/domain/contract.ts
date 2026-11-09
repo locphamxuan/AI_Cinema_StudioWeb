@@ -30,8 +30,8 @@ export function contractActions(status: ContractStatus): ContractAction[] {
 export const needsStudio = (contract: Pick<Contract, 'status'>) => contractActions(contract.status).length > 0;
 
 /** Same bounds as the API (BR-45): whole thousands of VND, from 1,000 up to 100 billion. */
-export const MIN_COST_VND = 1_000;
-export const MAX_COST_VND = 100_000_000_000;
+const MIN_COST_VND = 1_000;
+const MAX_COST_VND = 100_000_000_000;
 
 export type CostParse = { ok: true; value: number } | { ok: false; message: string };
 
@@ -47,7 +47,7 @@ export function parseCostVnd(input: string): CostParse {
   return { ok: true, value };
 }
 
-export const contractTitle = (contract: Contract) => contract.project?.movie?.title ?? 'Dự án';
+const contractTitle = (contract: Contract) => contract.project?.movie?.title ?? 'Dự án';
 
 /** True once a round of the project carries both signatures: only then may the studio deliver films. */
 export const hasSignedContract = (contracts: Pick<Contract, 'status'>[]) => contracts.some((c) => c.status === 'SIGNED');

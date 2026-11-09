@@ -11,7 +11,7 @@ const LINKS = [
   { href: '/projects', label: 'Dự án', icon: Film },
 ] as const;
 
-export const isActive = (pathname: string, href: string) =>
+const isActive = (pathname: string, href: string) =>
   href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
 
 export function PortalHeader({ studioName }: { studioName: string }) {
