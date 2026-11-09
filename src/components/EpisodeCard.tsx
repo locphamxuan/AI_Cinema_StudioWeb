@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { MessageSquareWarning, Upload } from 'lucide-react';
 import { Badge, BUTTON, type Tone } from './ui';
-import { canSubmit, EPISODE_STATUS_LABEL, INGEST_STATUS_LABEL } from '@/lib/domain/episode';
+import { RetryDeliveryButton } from './RetryDeliveryButton';
+import { canRetry, canSubmit, EPISODE_STATUS_LABEL, INGEST_STATUS_LABEL } from '@/lib/domain/episode';
 import { daysUntil, formatDate, formatDateTime, formatDuration } from '@/lib/format';
 import type { EpisodeStatus, PortalEpisode } from '@/lib/api/types';
 
@@ -49,6 +50,7 @@ export function EpisodeCard({ projectId, episode, contractSigned }: { projectId:
             {formatDateTime(delivery.createdAt)}
           </p>
           {delivery.failureReason && <p className="mt-1 text-red-600 dark:text-red-300">Lỗi xử lý: {delivery.failureReason}</p>}
+          {canRetry(delivery) && <RetryDeliveryButton mediaAssetId={delivery.id} />}
         </div>
       ) : (
         <p className="text-sm text-muted">Chưa có bản nộp nào.</p>

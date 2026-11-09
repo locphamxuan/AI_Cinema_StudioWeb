@@ -7,7 +7,7 @@ import {
   hasSignedContract,
   parseCostVnd,
 } from '@/lib/domain/contract';
-import { canSubmit } from '@/lib/domain/episode';
+import { canRetry, canSubmit } from '@/lib/domain/episode';
 import { daysUntil, formatDate, formatVnd } from '@/lib/format';
 import { getConfig } from '@/lib/config';
 
@@ -97,6 +97,15 @@ describe('canSubmit', () => {
 
   it.each(['DRAFT', 'PROCESSING', 'APPROVED', 'PUBLISHED'] as const)('refuses %s', (status) => {
     expect(canSubmit(true, status).allowed).toBe(false);
+  });
+});
+
+describe('canRetry', () => {
+  it('offers a new processing only for a failed delivery', () => {
+    expect(canRetry({ ingestStatus: 'FAILED' })).toBe(true);
+    expect(canRetry({ ingestStatus: 'READY' })).toBe(false);
+    expect(canRetry({ ingestStatus: 'TRANSCODING' })).toBe(false);
+    expect(canRetry(null)).toBe(false);
   });
 });
 

@@ -5,6 +5,8 @@ import userEvent from '@testing-library/user-event';
 import type { Contract, PortalEpisode } from '@/lib/api/types';
 
 vi.mock('@/app/actions/contracts', () => ({ actOnContract: vi.fn(async () => ({})) }));
+const retryDelivery = vi.fn();
+vi.mock('@/app/actions/deliveries', () => ({ retryDelivery: (...args: unknown[]) => retryDelivery(...args) }));
 
 import { ContractRound } from '@/components/ContractRound';
 import { EpisodeCard } from '@/components/EpisodeCard';
@@ -77,5 +79,37 @@ describe('EpisodeCard', () => {
     render(<EpisodeCard projectId="p1" episode={episode({ status: 'AWAITING_MEDIA', latestDelivery: null })} contractSigned={false} />);
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.getByText('Hợp đồng chưa được ký đủ hai bên.')).toBeInTheDocument();
+  });
+});
+
+describe('retrying a failed delivery', () => {
+  const failed = (over: Partial<PortalEpisode> = {}) =>
+    episode({
+      status: 'PROCESSING',
+      latestDelivery: { id: 'm9', version: 2, ingestStatus: 'FAILED', failureReason: 'Link không tải được', createdAt: '2026-11-07T03:00:00Z', changeRequest: null },
+      ...over,
+    });
+
+  it('is offered only when the latest delivery failed', () => {
+    const { unmount } = render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
+    expect(screen.getByRole('button', { name: 'Xử lý lại' })).toBeInTheDocument();
+    unmount();
+    render(<EpisodeCard projectId="p1" episode={episode({})} contractSigned />);
+    expect(screen.queryByRole('button', { name: 'Xử lý lại' })).not.toBeInTheDocument();
+  });
+
+  it('sends the delivery id and shows the API refusal', async () => {
+    retryDelivery.mockResolvedValueOnce({ error: 'Không thể thực hiện ở trạng thái hiện tại: newer delivery' });
+    render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
+    await userEvent.click(screen.getByRole('button', { name: 'Xử lý lại' }));
+    expect((retryDelivery.mock.calls[0][1] as FormData).get('mediaAssetId')).toBe('m9');
+    expect(await screen.findByRole('alert')).toHaveTextContent('newer delivery');
+  });
+
+  it('confirms once the delivery is sent back to processing', async () => {
+    retryDelivery.mockResolvedValueOnce({ done: 'Đã gửi bản phim đi xử lý lại.' });
+    render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
+    await userEvent.click(screen.getByRole('button', { name: 'Xử lý lại' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Đã gửi bản phim đi xử lý lại.');
   });
 });

@@ -17,6 +17,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
 import { login } from '@/app/actions/auth';
 import { actOnContract } from '@/app/actions/contracts';
+import { retryDelivery } from '@/app/actions/deliveries';
 
 const form = (fields: Record<string, string>) => {
   const data = new FormData();
@@ -95,5 +96,34 @@ describe('actOnContract', () => {
   it('asks to log in again without a session', async () => {
     const state = await actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }));
     expect(state.error).toContain('đăng nhập lại');
+  });
+});
+
+describe('retryDelivery', () => {
+  const signedIn = () => {
+    jar.set('sw_access', 'acc');
+    jar.set('sw_expires', String(Date.now() + 600_000));
+  };
+
+  it('asks the API to process the failed delivery again', async () => {
+    signedIn();
+    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async () => json({ id: 'm1', ingestStatus: 'PENDING' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const state = await retryDelivery({}, form({ mediaAssetId: 'm1' }));
+    expect(state.done).toContain('xử lý lại');
+    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:3001/api/studio-portal/media-assets/m1/retry');
+    expect(fetchMock.mock.calls[0][1]?.method).toBe('POST');
+  });
+
+  it('shows why the API refused, e.g. a newer delivery exists', async () => {
+    signedIn();
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'CONFLICT', message: 'Only the latest failed delivery can be retried' } }, 409)));
+    const state = await retryDelivery({}, form({ mediaAssetId: 'm1' }));
+    expect(state.error).toBe('Không thể thực hiện ở trạng thái hiện tại: Only the latest failed delivery can be retried');
+  });
+
+  it('needs a delivery and a session', async () => {
+    expect((await retryDelivery({}, form({}))).error).toBe('Yêu cầu không hợp lệ.');
+    expect((await retryDelivery({}, form({ mediaAssetId: 'm1' }))).error).toContain('đăng nhập lại');
   });
 });

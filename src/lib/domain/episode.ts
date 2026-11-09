@@ -1,4 +1,4 @@
-import type { EpisodeStatus, IngestStatus, ProjectStatus } from '@/lib/api/types';
+import type { Delivery, EpisodeStatus, IngestStatus, ProjectStatus } from '@/lib/api/types';
 
 export const EPISODE_STATUS_LABEL: Record<EpisodeStatus, string> = {
   DRAFT: 'Chưa bàn giao',
@@ -46,3 +46,6 @@ export function canSubmit(contractSigned: boolean, status: EpisodeStatus): Submi
   }
   return { allowed: true };
 }
+
+/** Only the latest delivery of an episode, once its processing failed, can be processed again (e.g. after fixing the link). */
+export const canRetry = (delivery: Pick<Delivery, 'ingestStatus'> | null | undefined) => delivery?.ingestStatus === 'FAILED';

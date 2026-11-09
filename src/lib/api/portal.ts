@@ -2,6 +2,7 @@ import { apiRequest, type FetchLike } from './http';
 import type {
   AuthSession,
   Contract,
+  Delivery,
   MediaLinkSubmission,
   Paginated,
   PortalNotification,
@@ -29,6 +30,7 @@ export function portalApi(baseUrl: string, token: string, fetchImpl?: FetchLike)
     project: (projectId: string) => get<ProjectDetail>(`/studio-portal/projects/${id(projectId)}`),
     submitLink: (episodeId: string, body: MediaLinkSubmission) =>
       post<unknown>(`/studio-portal/episodes/${id(episodeId)}/media`, body),
+    retryDelivery: (mediaAssetId: string) => post<Delivery>(`/studio-portal/media-assets/${id(mediaAssetId)}/retry`),
     notifications: (limit = 20) => get<Paginated<PortalNotification>>(`/notifications?limit=${limit}&page=1`),
     markAllRead: () => apiRequest<{ updated: number }>(baseUrl, '/notifications/read-all', { method: 'PATCH', token, fetchImpl }),
   };

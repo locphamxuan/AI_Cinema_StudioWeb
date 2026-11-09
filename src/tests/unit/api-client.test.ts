@@ -63,6 +63,7 @@ describe('portalApi', () => {
     await api.project('p/1');
     await api.notifications(5);
     await api.markAllRead();
+    await api.retryDelivery('m/1');
     const calls = fetchImpl.mock.calls.map(([url, init]) => [init?.method, url.replace(BASE, ''), init?.body]);
     expect(calls).toEqual([
       ['GET', '/studio-portal/me', undefined],
@@ -72,6 +73,7 @@ describe('portalApi', () => {
       ['GET', '/studio-portal/projects/p%2F1', undefined],
       ['GET', '/notifications?limit=5&page=1', undefined],
       ['PATCH', '/notifications/read-all', undefined],
+      ['POST', '/studio-portal/media-assets/m%2F1/retry', undefined],
     ]);
   });
 

@@ -8,7 +8,7 @@ calls the AI Cinema API with that account, so films are exchanged only inside th
 | Đăng nhập | Logs in with its AI Cinema account. Accounts of any other role are refused. |
 | Tổng quan | Studio details, contracts waiting for it, projects in production, notifications. |
 | Hợp đồng | Every round of each negotiation. Fills in the cost and signs a template, or agrees with / counters the Admin's cost. |
-| Dự án | Final Script, episodes with deadlines and status, latest delivery, the Reviewer's change requests. |
+| Dự án | Final Script, episodes with deadlines and status, latest delivery, the Reviewer's change requests; processes a failed delivery again. |
 | Nộp phim | Delivers one episode to the Reviewer (MP4/MOV file or link) with the mandatory AI Disclosure and a proposed AI label. |
 
 A film can be delivered only once the contract carries both signatures and the episode is `AWAITING_MEDIA`, `IN_REVIEW` or
