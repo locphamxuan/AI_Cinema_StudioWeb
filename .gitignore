@@ -22,7 +22,7 @@ npm-debug.log*
 .env*
 !.env.example
 
-# runtime data of this site (the log of films already sent back)
+# local data left by the removed email flow (films sent back); nothing writes it any more
 /.data/
 
 # vercel
