@@ -1,0 +1,91 @@
+'use client';
+
+import { useActionState, useState } from 'react';
+import { PenLine } from 'lucide-react';
+import { actOnContract, type ContractActionState } from '@/app/actions/contracts';
+import { parseCostVnd, type ContractAction } from '@/lib/domain/contract';
+import { formatVnd } from '@/lib/format';
+import { BUTTON, BUTTON_GHOST, ErrorCard, INPUT, SuccessCard } from './ui';
+
+const SUBMIT_LABEL: Record<ContractAction, string> = {
+  propose: 'Gửi giá và ký',
+  sign: 'Đồng ý giá và ký',
+  counter: 'Gửi đề xuất giá khác',
+};
+
+function CostField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const parsed = value ? parseCostVnd(value) : null;
+  return (
+    <label className="block space-y-1 text-sm">
+      <span className="font-medium">Giá sản xuất (VND, bội số 1.000)</span>
+      <input
+        name="costVnd"
+        inputMode="numeric"
+        required
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={INPUT}
+        placeholder="Ví dụ: 170.000.000"
+      />
+      {parsed && (
+        <span className={`block text-xs ${parsed.ok ? 'text-muted' : 'text-red-600 dark:text-red-300'}`}>
+          {parsed.ok ? `= ${formatVnd(parsed.value)}` : parsed.message}
+        </span>
+      )}
+    </label>
+  );
+}
+
+/** The studio's move on a round waiting for it: fill in the cost (SENT), or agree / counter the Admin (ADMIN_COUNTERED). */
+export function ContractActions({
+  contractId,
+  actions,
+  adminCost,
+}: {
+  contractId: string;
+  actions: ContractAction[];
+  adminCost: number | null;
+}) {
+  const [state, formAction, pending] = useActionState<ContractActionState, FormData>(actOnContract, {});
+  const [mode, setMode] = useState<ContractAction>(actions[0]);
+  const [cost, setCost] = useState('');
+
+  if (state.done) return <SuccessCard message={state.done} />;
+  const needsCost = mode !== 'sign';
+  return (
+    <form action={formAction} className="space-y-3 rounded-lg border border-accent/40 bg-accent/5 p-3">
+      <input type="hidden" name="contractId" value={contractId} />
+      <input type="hidden" name="action" value={mode} />
+      {actions.length > 1 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Lựa chọn của Studio">
+          {actions.map((action) => (
+            <button
+              key={action}
+              type="button"
+              onClick={() => setMode(action)}
+              aria-pressed={mode === action}
+              className={`${BUTTON_GHOST} aria-pressed:border-accent aria-pressed:bg-accent/10 aria-pressed:text-accent`}
+            >
+              {action === 'sign' ? 'Đồng ý giá Admin' : 'Đề xuất giá khác'}
+            </button>
+          ))}
+        </div>
+      )}
+      {mode === 'sign' && adminCost !== null && (
+        <p className="text-sm">
+          Ký đồng ý với giá Admin đề xuất: <strong>{formatVnd(adminCost)}</strong>. Hợp đồng sẽ đủ hai chữ ký.
+        </p>
+      )}
+      {needsCost && <CostField value={cost} onChange={setCost} />}
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="agree" required className="mt-0.5 h-4 w-4 accent-[var(--accent)]" />
+        <span>Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.</span>
+      </label>
+      {state.error && <ErrorCard message={state.error} />}
+      <button type="submit" disabled={pending} className={BUTTON}>
+        <PenLine className="h-4 w-4" aria-hidden="true" />
+        {pending ? 'Đang gửi…' : SUBMIT_LABEL[mode]}
+      </button>
+    </form>
+  );
+}

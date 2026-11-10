@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* Same switch as the colour tokens below: `dark:` utilities follow the system theme. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
 
 :root {
   --background: #f8fafc;

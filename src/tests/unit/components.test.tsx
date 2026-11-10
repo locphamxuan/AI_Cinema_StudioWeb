@@ -1,150 +1,115 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AccessForm } from '@/components/AccessForm';
-import { BriefList } from '@/components/BriefList';
-import { FilmLibrary } from '@/components/FilmLibrary';
-import { ReplyPanel, type DeliveryView } from '@/components/ReplyPanel';
-import { loadCatalog } from '@/lib/demo/catalog';
-import { parseBrief } from '@/lib/mail/brief-parser';
-import { FIXTURE_MESSAGES } from '@/lib/mail/fixtures';
+import type { Contract, PortalEpisode } from '@/lib/api/types';
 
-const refresh = vi.hoisted(() => vi.fn());
+vi.mock('@/app/actions/contracts', () => ({ actOnContract: vi.fn(async () => ({})) }));
+const retryDelivery = vi.fn();
+vi.mock('@/app/actions/deliveries', () => ({ retryDelivery: (...args: unknown[]) => retryDelivery(...args) }));
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
+import { ContractRound } from '@/components/ContractRound';
+import { EpisodeCard } from '@/components/EpisodeCard';
 
-afterEach(() => {
-  cleanup();
-  vi.unstubAllGlobals();
-  refresh.mockClear();
+const contract = (over: Partial<Contract>): Contract => ({
+  id: 'c1',
+  projectId: 'p1',
+  studioId: 's',
+  round: 2,
+  previousId: 'c0',
+  costVnd: 150_000_000,
+  proposedBy: 'ADMIN',
+  status: 'ADMIN_COUNTERED',
+  terms: 'Studio không chia sẻ phim cho bên thứ ba.',
+  adminSignedAt: '2026-11-07T03:00:00Z',
+  adminSignedBy: { id: 'a', fullName: 'Admin AI Cinema' },
+  studioSignedAt: null,
+  createdAt: '2026-11-07T03:00:00Z',
+  updatedAt: '2026-11-07T03:00:00Z',
+  ...over,
 });
 
-const deliveries: DeliveryView[] = [
-  { version: 'v1', label: 'Bản giao đầu', summary: 'Dựng thô.', episodes: [{ title: 'Tập đầu', durationSeconds: 125 }], timesSent: 0 },
-  { version: 'v2', label: 'Bản sửa theo góp ý', summary: 'Đã chỉnh màu.', episodes: [{ title: 'Tập đầu (sửa)', durationSeconds: 130 }], timesSent: 2 },
-];
+const episode = (over: Partial<PortalEpisode>): PortalEpisode => ({
+  id: 'e1',
+  episodeNumber: 1,
+  title: 'Mở đầu',
+  synopsis: null,
+  status: 'CHANGES_REQUESTED',
+  targetDurationSeconds: 120,
+  deliveryDeadline: '2099-01-01T00:00:00.000Z',
+  dueDate: null,
+  latestDelivery: {
+    id: 'm1',
+    version: 1,
+    ingestStatus: 'READY',
+    failureReason: null,
+    createdAt: '2026-11-07T03:00:00Z',
+    changeRequest: { comments: 'Thay nhạc nền phút 3', createdAt: '2026-11-07T05:00:00Z' },
+  },
+  ...over,
+});
 
-function stubFetch(status: number, body: unknown) {
-  const fetchMock = vi.fn(async () => new Response(JSON.stringify(body), { status }));
-  vi.stubGlobal('fetch', fetchMock);
-  return fetchMock;
-}
-
-describe('BriefList', () => {
-  const rows = FIXTURE_MESSAGES.map((message) => ({ brief: parseBrief(message)!, sent: [] as never[] }));
-
-  it('shows each order with what it asks and whether the film went back', () => {
-    render(<BriefList rows={[rows[0], { ...rows[1], sent: [{ version: 'v1' } as never] }]} />);
-
-    expect(screen.getByRole('link', { name: /Căn Hộ Số 13/ })).toHaveAttribute('href', '/messages/1001');
-    expect(screen.getByText('Chưa trả phim')).toBeInTheDocument();
-    expect(screen.getByText('Đã gửi v1')).toBeInTheDocument();
-    expect(screen.getAllByText(/Từ AI Cinema/)).toHaveLength(2);
+describe('ContractRound', () => {
+  it('lets the studio agree with or counter the Admin cost', async () => {
+    render(<ContractRound contract={contract({})} />);
+    expect(screen.getByText('Admin đề xuất giá – chờ Studio')).toBeInTheDocument();
+    expect(screen.getAllByText('150.000.000 VND').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Đồng ý giá và ký' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Đề xuất giá khác' }));
+    expect(screen.getByPlaceholderText('Ví dụ: 170.000.000')).toBeInTheDocument();
+    await userEvent.type(screen.getByPlaceholderText('Ví dụ: 170.000.000'), '1500');
+    expect(screen.getByText('Giá phải là bội số của 1.000 VND.')).toBeInTheDocument();
   });
 
-  it('explains an empty inbox', () => {
-    render(<BriefList rows={[]} />);
-    expect(screen.getByText(/Chưa có đơn đặt hàng nào/)).toBeInTheDocument();
+  it('offers nothing on a round waiting for the Admin', () => {
+    render(<ContractRound contract={contract({ status: 'STUDIO_SIGNED', proposedBy: 'STUDIO', adminSignedAt: null, studioSignedAt: '2026-11-07T03:00:00Z' })} />);
+    expect(screen.getByText('Studio đã ký – chờ Admin')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });
 
-describe('ReplyPanel', () => {
-  const contact = { name: 'Nguyễn Thị Creator', email: 'creator01@aicinema.com' };
-  const panel = (generic = false) => (
-    <ReplyPanel
-      messageId="1001"
-      contact={contact}
-      subjectPrefix='[Studio] Giao phim "Căn Hộ Số 13" (Mùa 1)'
-      deliveries={deliveries}
-      generic={generic}
-      partNames={['Tập 1', 'Tập 2']}
-    />
-  );
-
-  it('offers the versions, shows the episodes of the chosen one and how often it went out', async () => {
-    render(panel());
-    expect(screen.getByRole('radio', { name: /Bản giao đầu \(v1\)/ })).toBeChecked();
-    expect(screen.getByText('Tập 1 - Tập đầu')).toBeInTheDocument();
-    expect(screen.getByText('2:05')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('radio', { name: /Bản sửa theo góp ý \(v2\)/ }));
-    expect(screen.getByText('Tập 1 - Tập đầu (sửa)')).toBeInTheDocument();
-    expect(screen.getByText(/đã gửi 2 lần/)).toBeInTheDocument();
+describe('EpisodeCard', () => {
+  it('shows the change request and lets the studio deliver again', () => {
+    render(<EpisodeCard projectId="p1" episode={episode({})} contractSigned />);
+    expect(screen.getByText('Thay nhạc nền phút 3')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Nộp lại phim/ })).toHaveAttribute('href', '/projects/p1/episodes/e1');
   });
 
-  it('warns that the films are the general ones when none were made for the title', () => {
-    render(panel(true));
-    expect(screen.getByText(/Chưa có phim soạn sẵn riêng/)).toBeInTheDocument();
+  it('blocks delivery until the contract is signed', () => {
+    render(<EpisodeCard projectId="p1" episode={episode({ status: 'AWAITING_MEDIA', latestDelivery: null })} contractSigned={false} />);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getByText('Hợp đồng chưa được ký đủ hai bên.')).toBeInTheDocument();
   });
+});
 
-  it('sends the chosen version and reports where it went', async () => {
-    const fetchMock = stubFetch(201, { id: 'r1' });
-    render(panel());
-    await userEvent.click(screen.getByRole('radio', { name: /v2/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Gửi lại phim' }));
-
-    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(JSON.parse(String(init.body))).toEqual({
-      version: 'v2',
-      compose: { subject: '[Studio] Giao phim "Căn Hộ Số 13" (Mùa 1) - Bản sửa theo góp ý v2' },
+describe('retrying a failed delivery', () => {
+  const failed = (over: Partial<PortalEpisode> = {}) =>
+    episode({
+      status: 'PROCESSING',
+      latestDelivery: { id: 'm9', version: 2, ingestStatus: 'FAILED', failureReason: 'Link không tải được', createdAt: '2026-11-07T03:00:00Z', changeRequest: null },
+      ...over,
     });
-    expect(await screen.findByRole('status')).toHaveTextContent('Đã gửi phim v2 tới creator01@aicinema.com.');
-    expect(refresh).toHaveBeenCalled();
+
+  it('is offered only when the latest delivery failed', () => {
+    const { unmount } = render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
+    expect(screen.getByRole('button', { name: 'Xử lý lại' })).toBeInTheDocument();
+    unmount();
+    render(<EpisodeCard projectId="p1" episode={episode({})} contractSigned />);
+    expect(screen.queryByRole('button', { name: 'Xử lý lại' })).not.toBeInTheDocument();
   });
 
-  it('mails only the lead Creator: no CC and no way to address a co-Creator (BR-67)', async () => {
-    const fetchMock = stubFetch(201, { id: 'r1' });
-    render(panel());
-    expect(screen.getByLabelText('Người nhận')).toHaveTextContent('Nguyễn Thị Creator <creator01@aicinema.com>');
-    expect(screen.queryByLabelText(/^CC/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Chỉ gửi/ })).not.toBeInTheDocument();
-    await userEvent.clear(screen.getByLabelText('Tiêu đề'));
-    await userEvent.type(screen.getByLabelText('Tiêu đề'), 'Tập 2 bản sửa');
-    await userEvent.click(screen.getByRole('button', { name: 'Gửi lại phim' }));
-
-    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(JSON.parse(String(init.body)).compose).toEqual({ subject: 'Tập 2 bản sửa' });
+  it('sends the delivery id and shows the API refusal', async () => {
+    retryDelivery.mockResolvedValueOnce({ error: 'Không thể thực hiện ở trạng thái hiện tại: newer delivery' });
+    render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
+    await userEvent.click(screen.getByRole('button', { name: 'Xử lý lại' }));
+    expect((retryDelivery.mock.calls[0][1] as FormData).get('mediaAssetId')).toBe('m9');
+    expect(await screen.findByRole('alert')).toHaveTextContent('newer delivery');
   });
 
-  it('shows the reason when sending fails', async () => {
-    stubFetch(502, { error: 'Không gửi được email tới creator01@aicinema.com: SMTP refused' });
-    render(panel());
-    await userEvent.click(screen.getByRole('button', { name: 'Gửi lại phim' }));
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('SMTP refused');
-    expect(refresh).not.toHaveBeenCalled();
-  });
-});
-
-describe('FilmLibrary', () => {
-  it('lists every prepared project with its versions and the general films', async () => {
-    render(<FilmLibrary catalog={await loadCatalog()} />);
-
-    const project = screen.getByRole('region', { name: 'Căn Hộ Số 13' });
-    expect(within(project).getByText('Bản giao đầu (v1)')).toBeInTheDocument();
-    expect(within(project).getByText('Bản sửa theo góp ý (v2)')).toBeInTheDocument();
-    expect(screen.getByText(/dùng cho dự án chưa có phim riêng/)).toBeInTheDocument();
-  });
-});
-
-describe('AccessForm', () => {
-  it('sends the code and refreshes when it is right', async () => {
-    stubFetch(200, { ok: true });
-    render(<AccessForm />);
-    await userEvent.type(screen.getByLabelText('Mã truy cập'), 's3cret');
-    await userEvent.click(screen.getByRole('button', { name: 'Vào hộp thư' }));
-
-    await waitFor(() => expect(refresh).toHaveBeenCalled());
-  });
-
-  it('shows why the code was refused', async () => {
-    stubFetch(401, { error: 'Mã truy cập không đúng.' });
-    render(<AccessForm />);
-    await userEvent.type(screen.getByLabelText('Mã truy cập'), 'x');
-    await userEvent.click(screen.getByRole('button', { name: 'Vào hộp thư' }));
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('Mã truy cập không đúng.');
-    expect(refresh).not.toHaveBeenCalled();
+  it('confirms once the delivery is sent back to processing', async () => {
+    retryDelivery.mockResolvedValueOnce({ done: 'Đã gửi bản phim đi xử lý lại.' });
+    render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
+    await userEvent.click(screen.getByRole('button', { name: 'Xử lý lại' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Đã gửi bản phim đi xử lý lại.');
   });
 });

@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  // nodemailer reads files and opens sockets: keep it out of the bundle and run it on the server only.
-  serverExternalPackages: ["nodemailer"],
+  // `next dev` would otherwise write a generic AGENTS.md at the root; the project keeps no such file.
+  agentRules: false,
 };
 
 export default nextConfig;
