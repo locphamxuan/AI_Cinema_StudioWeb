@@ -41,3 +41,8 @@ TESTING.md
 PROJECT_OVERVIEW.md
 PROJECT_CONTEXT.md
 PROGRESS.md
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
