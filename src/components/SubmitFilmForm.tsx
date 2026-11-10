@@ -66,12 +66,12 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <fieldset className="space-y-2">
         <legend className="font-semibold">Cách nộp phim</legend>
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-3">
           {METHODS.map((option) => (
-            <label key={option.value} className="flex cursor-pointer items-start gap-2 rounded-lg border border-border p-3 text-sm has-[:checked]:border-accent has-[:checked]:bg-accent/5">
+            <label key={option.value} className="flex cursor-pointer items-start gap-2.5 rounded-2xl border border-border p-3.5 text-sm transition-all has-[:checked]:border-accent has-[:checked]:bg-accent/5">
               <input type="radio" name="method" className="mt-0.5 accent-[var(--accent)]" checked={method === option.value} onChange={() => setMethod(option.value)} />
               <span>
-                <span className="block font-medium">{option.label}</span>
+                <span className="block font-semibold">{option.label}</span>
                 <span className="text-xs text-muted">{option.hint}</span>
               </span>
             </label>
@@ -83,7 +83,7 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
             aria-label="Tệp phim"
             accept="video/mp4,video/quicktime,.mp4,.mov"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-accent/10 file:px-3 file:py-2 file:text-accent"
+            className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-accent/10 file:px-4 file:py-2 file:font-semibold file:text-accent"
           />
         ) : (
           <input

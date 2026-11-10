@@ -1,6 +1,7 @@
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { ContractRound } from '@/components/ContractRound';
-import { CARD, EmptyNote, Guarded, PageTitle } from '@/components/ui';
+import { BUTTON_GHOST, CARD, EmptyNote, Guarded, PageTitle } from '@/components/ui';
 import { groupByProject } from '@/lib/domain/contract';
 import { pagePortal } from '@/lib/session/server';
 
@@ -10,13 +11,13 @@ async function Contracts() {
   const contracts = await (await pagePortal()).contracts();
   if (!contracts.length) return <EmptyNote>AI Cinema chưa gửi hợp đồng nào cho Studio.</EmptyNote>;
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {groupByProject(contracts).map(({ projectId, title, rounds }) => (
-        <section key={projectId} className={CARD}>
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <h2 className="font-semibold">{title}</h2>
-            <Link href={`/projects/${projectId}`} className="text-sm text-accent hover:underline">
-              Xem dự án
+        <section key={projectId} className={`${CARD} overflow-hidden transition-shadow hover:shadow-md`}>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+            <h2 className="text-base font-bold">{title}</h2>
+            <Link href={`/projects/${projectId}`} className={`${BUTTON_GHOST} px-3.5 py-1.5 text-xs`}>
+              Xem dự án <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
           <div className="divide-y divide-border">

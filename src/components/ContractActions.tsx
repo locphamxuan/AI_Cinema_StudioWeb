@@ -16,8 +16,8 @@ const SUBMIT_LABEL: Record<ContractAction, string> = {
 function CostField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const parsed = value ? parseCostVnd(value) : null;
   return (
-    <label className="block space-y-1 text-sm">
-      <span className="font-medium">Giá sản xuất (VND, bội số 1.000)</span>
+    <label className="block space-y-1.5 text-sm">
+      <span className="block text-xs font-semibold text-muted">Giá sản xuất (VND, bội số 1.000)</span>
       <input
         name="costVnd"
         inputMode="numeric"
@@ -53,7 +53,7 @@ export function ContractActions({
   if (state.done) return <SuccessCard message={state.done} />;
   const needsCost = mode !== 'sign';
   return (
-    <form action={formAction} className="space-y-3 rounded-lg border border-accent/40 bg-accent/5 p-3">
+    <form action={formAction} className="space-y-4 rounded-2xl border border-border bg-background p-4 sm:p-5">
       <input type="hidden" name="contractId" value={contractId} />
       <input type="hidden" name="action" value={mode} />
       {actions.length > 1 && (
@@ -64,7 +64,7 @@ export function ContractActions({
               type="button"
               onClick={() => setMode(action)}
               aria-pressed={mode === action}
-              className={`${BUTTON_GHOST} aria-pressed:border-accent aria-pressed:bg-accent/10 aria-pressed:text-accent`}
+              className={`${BUTTON_GHOST} text-xs aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-white dark:aria-pressed:text-slate-900`}
             >
               {action === 'sign' ? 'Đồng ý giá Admin' : 'Đề xuất giá khác'}
             </button>
@@ -73,11 +73,11 @@ export function ContractActions({
       )}
       {mode === 'sign' && adminCost !== null && (
         <p className="text-sm">
-          Ký đồng ý với giá Admin đề xuất: <strong>{formatVnd(adminCost)}</strong>. Hợp đồng sẽ đủ hai chữ ký.
+          Ký đồng ý với giá Admin đề xuất: <strong className="font-mono">{formatVnd(adminCost)}</strong>. Hợp đồng sẽ đủ hai chữ ký.
         </p>
       )}
       {needsCost && <CostField value={cost} onChange={setCost} />}
-      <label className="flex items-start gap-2 text-sm">
+      <label className="flex items-start gap-2.5 text-sm cursor-pointer">
         <input type="checkbox" name="agree" required className="mt-0.5 h-4 w-4 accent-[var(--accent)]" />
         <span>Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.</span>
       </label>

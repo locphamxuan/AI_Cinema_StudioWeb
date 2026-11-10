@@ -15,7 +15,7 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
   return (
     <>
       <PortalHeader studioName={studioName} />
-      <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 sm:py-8">{children}</main>
     </>
   );
 }

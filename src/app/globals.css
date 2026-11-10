@@ -4,24 +4,24 @@
 @custom-variant dark (@media (prefers-color-scheme: dark));
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f9fafb;
+  --foreground: #111827;
   --card: #ffffff;
-  --border-color: rgba(15, 23, 42, 0.1);
+  --border-color: rgba(148, 163, 184, 0.28);
   --muted-color: #64748b;
-  --accent: #0f766e;
-  --accent-dark: #115e59;
+  --accent: #121212;
+  --accent-dark: #000000;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b1120;
+    --background: #090b10;
     --foreground: #f1f5f9;
-    --card: #131c31;
-    --border-color: rgba(255, 255, 255, 0.12);
+    --card: #111420;
+    --border-color: rgba(255, 255, 255, 0.1);
     --muted-color: #94a3b8;
-    --accent: #2dd4bf;
-    --accent-dark: #14b8a6;
+    --accent: #ffffff;
+    --accent-dark: #e2e8f0;
   }
 }
 

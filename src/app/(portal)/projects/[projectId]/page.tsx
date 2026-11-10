@@ -19,9 +19,9 @@ async function Project({ projectId }: { projectId: string }) {
       {!signed && (
         <ErrorCard message="Hợp đồng chưa được ký đủ hai bên: Studio chỉ được nhận và nộp phim sau khi hợp đồng hoàn tất." />
       )}
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className={`${CARD} space-y-3 p-4`}>
-          <h2 className="font-semibold">Thông tin dự án</h2>
+      <div className="grid gap-5 md:grid-cols-2">
+        <section className={`${CARD} space-y-3.5 p-6`}>
+          <h2 className="text-base font-bold">Thông tin dự án</h2>
           <Facts
             items={[
               ['Ý tưởng', <span key="idea" className="whitespace-pre-line font-normal">{project.ideaDescription}</span>],
@@ -32,17 +32,19 @@ async function Project({ projectId }: { projectId: string }) {
             ]}
           />
         </section>
-        <section className={`${CARD} space-y-3 p-4`}>
+        <section className={`${CARD} space-y-3.5 p-6`}>
           <div className="flex items-center justify-between gap-2">
-            <h2 className="font-semibold">Hợp đồng</h2>
-            <Link href="/contracts" className="text-sm text-accent hover:underline">Xem các vòng</Link>
+            <h2 className="text-base font-bold">Hợp đồng</h2>
+            <Link href="/contracts" className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground hover:bg-foreground/5">
+              Xem các vòng
+            </Link>
           </div>
           {latest ? (
             <Facts
               items={[
                 ['Trạng thái', <Badge key="s" tone={CONTRACT_STATUS_TONE[latest.status]}>{CONTRACT_STATUS_LABEL[latest.status]}</Badge>],
                 ['Vòng', String(latest.round)],
-                ['Giá sản xuất', formatVnd(latest.costVnd)],
+                ['Giá sản xuất', <span key="cost" className="font-mono font-bold">{formatVnd(latest.costVnd)}</span>],
               ]}
             />
           ) : (
@@ -50,12 +52,12 @@ async function Project({ projectId }: { projectId: string }) {
           )}
         </section>
       </div>
-      <section className={`${CARD} p-4`}>
-        <h2 className="font-semibold">Kịch bản Final</h2>
+      <section className={`${CARD} p-6`}>
+        <h2 className="text-base font-bold">Kịch bản Final</h2>
         {project.finalScript ? (
-          <details className="mt-2 text-sm">
-            <summary className="cursor-pointer text-accent">Phiên bản {project.finalScript.version} – bấm để xem toàn văn</summary>
-            <pre className="mt-3 max-h-[32rem] overflow-auto rounded-lg border border-border bg-background p-3 font-sans whitespace-pre-wrap">
+          <details className="mt-2.5 text-sm">
+            <summary className="cursor-pointer font-semibold text-foreground hover:underline">Phiên bản {project.finalScript.version} – bấm để xem toàn văn</summary>
+            <pre className="mt-3 max-h-[32rem] overflow-auto rounded-2xl border border-border bg-background p-4 font-sans whitespace-pre-wrap leading-relaxed">
               {project.finalScript.content}
             </pre>
           </details>
@@ -63,8 +65,8 @@ async function Project({ projectId }: { projectId: string }) {
           <p className="mt-1 text-sm text-muted">Kịch bản chưa được Admin duyệt Final.</p>
         )}
       </section>
-      <section className={CARD}>
-        <h2 className="border-b border-border px-4 py-3 font-semibold">Danh sách tập ({project.episodes.length})</h2>
+      <section className={`${CARD} overflow-hidden`}>
+        <h2 className="border-b border-border px-6 py-4 text-base font-bold">Danh sách tập ({project.episodes.length})</h2>
         {project.episodes.length ? (
           <div className="divide-y divide-border">
             {project.episodes.map((episode) => (

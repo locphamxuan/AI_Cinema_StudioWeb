@@ -24,13 +24,13 @@ async function Submit({ projectId, episodeId }: { projectId: string; episodeId: 
         )} · Thời lượng mục tiêu ${formatDuration(episode.targetDurationSeconds)}`}
       />
       {changeRequest && (
-        <section className="space-y-1 rounded-xl border border-red-300 bg-red-50 p-4 text-sm dark:border-red-500/40 dark:bg-red-500/10">
-          <h2 className="font-semibold text-red-800 dark:text-red-200">Yêu cầu sửa của Reviewer</h2>
+        <section className="space-y-1.5 rounded-3xl border border-red-200 bg-red-50 p-5 text-sm dark:border-red-500/30 dark:bg-red-500/10">
+          <h2 className="font-bold text-red-700 dark:text-red-300">Yêu cầu sửa của Reviewer</h2>
           <p className="whitespace-pre-line">{changeRequest.comments || 'Không có ghi chú.'}</p>
         </section>
       )}
       {check.allowed ? (
-        <section className={`${CARD} p-4`}>
+        <section className={`${CARD} p-6`}>
           <SubmitFilmForm projectId={project.id} episodeId={episode.id} />
         </section>
       ) : (

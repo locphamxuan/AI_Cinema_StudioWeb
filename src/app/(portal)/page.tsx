@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { Bell, CheckCheck } from 'lucide-react';
+import { ArrowUpRight, Bell, Building2, CheckCheck, Clock, FileSignature, Film } from 'lucide-react';
 import { markAllNotificationsRead } from '@/app/actions/notifications';
-import { Badge, CARD, EmptyNote, Facts, Guarded, PageTitle } from '@/components/ui';
+import { Badge, BUTTON_GHOST, CARD, EmptyNote, Facts, Guarded, PageTitle } from '@/components/ui';
 import { needsStudio } from '@/lib/domain/contract';
 import { formatDateTime } from '@/lib/format';
 import { pagePortal } from '@/lib/session/server';
@@ -11,11 +11,20 @@ export const metadata = { title: 'Tổng quan - Studio Web' };
 
 function NotificationItem({ item }: { item: PortalNotification }) {
   return (
-    <li className="flex gap-3 px-4 py-3">
-      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.readAt ? 'bg-transparent' : 'bg-accent'}`} aria-hidden="true" />
-      <div className="min-w-0 flex-1 space-y-0.5">
-        <p className={`text-sm ${item.readAt ? '' : 'font-semibold'}`}>{item.title}</p>
-        {item.body && <p className="text-sm whitespace-pre-line text-muted">{item.body}</p>}
+    <li className="flex items-start gap-3.5 px-6 py-4 transition-colors hover:bg-foreground/[0.02]">
+      <span
+        className={`mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+          item.readAt
+            ? 'border-border bg-background text-muted'
+            : 'border-accent/20 bg-accent text-white dark:text-slate-900'
+        }`}
+        aria-hidden="true"
+      >
+        <Clock className="h-3 w-3" />
+      </span>
+      <div className="min-w-0 flex-1 space-y-1">
+        <p className={`text-sm ${item.readAt ? 'text-foreground' : 'font-semibold text-foreground'}`}>{item.title}</p>
+        {item.body && <p className="whitespace-pre-line text-sm text-muted">{item.body}</p>}
         <p className="text-xs text-muted">{formatDateTime(item.createdAt)}</p>
       </div>
     </li>
@@ -35,10 +44,18 @@ async function Overview() {
   const unread = notifications.data.filter((item) => !item.readAt).length;
   return (
     <>
-      <PageTitle title={`Xin chào, ${studio.name}`} description="Theo dõi hợp đồng, dự án và yêu cầu của AI Cinema." />
-      <div className="grid gap-4 md:grid-cols-3">
-        <section className={`${CARD} space-y-3 p-4 md:col-span-1`}>
-          <h2 className="font-semibold">Thông tin Studio</h2>
+      <PageTitle title={`Xin chào, ${studio.name}`} description="Theo dõi hợp đồng, tiến độ dự án và thông báo từ AI Cinema.">
+        <Link href="/projects" className={BUTTON_GHOST}>
+          Quản lý dự án <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </PageTitle>
+
+      <div className="grid gap-5 md:grid-cols-3">
+        <section className={`${CARD} space-y-3.5 p-6`}>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+            <Building2 className="h-4 w-4 text-foreground" aria-hidden="true" />
+            <h2>Thông tin Studio</h2>
+          </div>
           <Facts
             items={[
               ['Tên', studio.name],
@@ -48,26 +65,43 @@ async function Overview() {
             ]}
           />
         </section>
-        <Link href="/contracts" className={`${CARD} space-y-1 p-4 hover:border-accent`}>
-          <p className="text-sm text-muted">Hợp đồng chờ Studio xử lý</p>
-          <p className="text-3xl font-bold">{waiting}</p>
-          <p className="text-sm text-muted">trên tổng {contracts.length} vòng hợp đồng</p>
+
+        <Link href="/contracts" className={`${CARD} group flex flex-col justify-between space-y-3 p-6 transition-all hover:-translate-y-0.5 hover:shadow-md`}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Hợp đồng chờ Studio xử lý</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors group-hover:bg-accent group-hover:text-white dark:group-hover:text-slate-900">
+              <FileSignature className="h-4 w-4" aria-hidden="true" />
+            </span>
+          </div>
+          <div>
+            <p className="text-4xl font-extrabold tracking-tight">{waiting}</p>
+            <p className="mt-1 text-xs text-muted">trên tổng {contracts.length} vòng hợp đồng</p>
+          </div>
         </Link>
-        <Link href="/projects" className={`${CARD} space-y-1 p-4 hover:border-accent`}>
-          <p className="text-sm text-muted">Dự án đang sản xuất</p>
-          <p className="text-3xl font-bold">{producing}</p>
-          <p className="text-sm text-muted">trên tổng {projects.length} dự án</p>
+
+        <Link href="/projects" className={`${CARD} group flex flex-col justify-between space-y-3 p-6 transition-all hover:-translate-y-0.5 hover:shadow-md`}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Dự án đang sản xuất</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors group-hover:bg-accent group-hover:text-white dark:group-hover:text-slate-900">
+              <Film className="h-4 w-4" aria-hidden="true" />
+            </span>
+          </div>
+          <div>
+            <p className="text-4xl font-extrabold tracking-tight">{producing}</p>
+            <p className="mt-1 text-xs text-muted">trên tổng {projects.length} dự án</p>
+          </div>
         </Link>
       </div>
-      <section className={CARD}>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-          <h2 className="flex items-center gap-2 font-semibold">
-            <Bell className="h-4 w-4" aria-hidden="true" /> Thông báo
+
+      <section className={`${CARD} overflow-hidden`}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+          <h2 className="flex items-center gap-2 text-base font-bold">
+            <Bell className="h-4 w-4" aria-hidden="true" /> Trung tâm thông báo
             {unread > 0 && <Badge tone="action">{unread} chưa đọc</Badge>}
           </h2>
           {unread > 0 && (
             <form action={markAllNotificationsRead}>
-              <button type="submit" className="flex items-center gap-1 text-sm text-accent hover:underline">
+              <button type="submit" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-foreground hover:underline">
                 <CheckCheck className="h-4 w-4" aria-hidden="true" /> Đánh dấu đã đọc tất cả
               </button>
             </form>
@@ -80,7 +114,7 @@ async function Overview() {
             ))}
           </ul>
         ) : (
-          <div className="p-4">
+          <div className="p-6">
             <EmptyNote>Chưa có thông báo nào.</EmptyNote>
           </div>
         )}
