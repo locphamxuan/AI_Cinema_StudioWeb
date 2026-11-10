@@ -59,6 +59,7 @@ src/
     session/          cookies, rotation, session helpers for pages and mutations
     domain/           contract, episode and submission rules, Vietnamese labels
   tests/unit/         Vitest
+e2e/                  Playwright tests and the fake API they run against
 ```
 
 ## Checks
@@ -69,3 +70,9 @@ npm run lint      # includes max 300 lines per file
 npm run typecheck
 npm run build
 ```
+
+### End-to-end tests
+
+`npm run test:e2e` builds the site, starts it on port 3200 against a fake AI Cinema API (`e2e/fake-api`, port 3299) and runs
+the Playwright tests in Chromium, so no backend is needed. The fake answers with the shapes of the real API, keeps its data in
+memory and goes back to its seed before each test. Install the browser once with `npx playwright install chromium`.
