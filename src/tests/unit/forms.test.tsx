@@ -19,6 +19,8 @@ vi.mock('@/lib/api/submit-film', () => ({ submitFilm: (...args: unknown[]) => su
 import { LoginForm } from '@/components/LoginForm';
 import { PortalHeader } from '@/components/PortalHeader';
 import { SubmitFilmForm } from '@/components/SubmitFilmForm';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Guarded } from '@/components/ui';
 import { ApiError } from '@/lib/api/http';
 
@@ -115,5 +117,20 @@ describe('Guarded', () => {
 
   it('lets a redirect through', async () => {
     await expect(Guarded({ load: async () => Promise.reject(new Error('NEXT_REDIRECT;/login')) })).rejects.toThrow('NEXT_REDIRECT');
+  });
+});
+
+describe('ThemeToggle', () => {
+  it('switches dark class on document root when toggled', async () => {
+    localStorage.clear();
+    document.documentElement.classList.remove('dark');
+    render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>,
+    );
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Chuyển đổi giao diện sáng / tối' }));
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
   });
 });

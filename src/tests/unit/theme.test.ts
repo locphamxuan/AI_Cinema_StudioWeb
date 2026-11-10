@@ -13,10 +13,10 @@ function sources(dir: string): string[] {
 }
 
 describe('dark theme', () => {
-  it('switches `dark:` utilities with the system theme, like the colour tokens', () => {
+  it('switches `dark:` utilities via `.dark` class, matching AI_Cinema_FE', () => {
     const css = readFileSync(path.join(SRC, 'app/globals.css'), 'utf8');
-    expect(css).toContain('@custom-variant dark (@media (prefers-color-scheme: dark));');
-    expect(css).toContain('@media (prefers-color-scheme: dark)');
+    expect(css).toContain('@custom-variant dark (&:where(.dark, .dark *));');
+    expect(css).toContain('.dark {');
   });
 
   it('gives every fixed palette colour a dark counterpart on the same element', () => {
