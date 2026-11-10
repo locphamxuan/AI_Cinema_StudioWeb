@@ -48,8 +48,9 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
       if (result.status === 401) router.push(EXPIRED_LOGIN_PATH);
       return;
     }
+    // No router.refresh(): the episode is no longer open for delivery, so a refreshed page would replace this
+    // confirmation with "cannot deliver". The project page loads fresh data when the studio goes back to it.
     setDone(true);
-    router.refresh();
   }
 
   if (done) {

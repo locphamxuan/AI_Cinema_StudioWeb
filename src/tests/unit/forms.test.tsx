@@ -86,7 +86,8 @@ describe('SubmitFilmForm', () => {
     );
     expect(screen.getByRole('status')).toHaveTextContent('Đã nộp phim cho Reviewer');
     expect(screen.getByRole('link', { name: 'Về trang dự án' })).toHaveAttribute('href', '/projects/p1');
-    expect(router.refresh).toHaveBeenCalled();
+    // Refreshing would swap the confirmation for the closed-episode notice of the page.
+    expect(router.refresh).not.toHaveBeenCalled();
   });
 
   it('sends the studio to the login page when its session ended', async () => {
