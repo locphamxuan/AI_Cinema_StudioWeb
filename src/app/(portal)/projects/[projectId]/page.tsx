@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { EpisodeCard } from '@/components/EpisodeCard';
 import { Badge, CARD, EmptyNote, ErrorCard, Facts, Guarded, PageTitle } from '@/components/ui';
-import { CONTRACT_STATUS_LABEL, CONTRACT_STATUS_TONE, hasSignedContract } from '@/lib/domain/contract';
+import { CONTRACT_STATUS_LABEL, CONTRACT_STATUS_TONE, hasSignedContract, needsStudio } from '@/lib/domain/contract';
 import { PROJECT_STATUS_LABEL } from '@/lib/domain/episode';
 import { formatDateTime, formatVnd } from '@/lib/format';
 import { pagePortal } from '@/lib/session/server';
@@ -35,8 +35,15 @@ async function Project({ projectId }: { projectId: string }) {
         <section className={`${CARD} space-y-3.5 p-6`}>
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-base font-bold">Hợp đồng</h2>
-            <Link href="/contracts" className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground hover:bg-foreground/5">
-              Xem các vòng
+            <Link
+              href="/contracts"
+              className={
+                latest && needsStudio(latest)
+                  ? 'rounded-full bg-[#121212] px-3.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-black dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200'
+                  : 'rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground hover:bg-foreground/5'
+              }
+            >
+              {latest && needsStudio(latest) ? 'Xử lý hợp đồng ngay' : 'Xem các vòng'}
             </Link>
           </div>
           {latest ? (

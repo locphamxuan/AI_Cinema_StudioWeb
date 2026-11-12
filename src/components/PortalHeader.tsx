@@ -28,9 +28,9 @@ export function PortalHeader({
 
   const navItems = [
     { href: '/', label: 'Tổng quan', ariaLabel: 'Tổng quan', icon: LayoutDashboard, badge: 0 },
-    { href: '/contracts', label: 'Hợp đồng & Báo giá', ariaLabel: 'Hợp đồng', icon: FileSignature, badge: waitingContracts },
+    { href: '/contracts', label: 'Hợp đồng', ariaLabel: 'Hợp đồng', icon: FileSignature, badge: waitingContracts },
     { href: '/projects', label: 'Dự án sản xuất', ariaLabel: 'Dự án', icon: Film, badge: producingProjects },
-    { href: '/#notifications', label: 'Trung tâm thông báo', ariaLabel: 'Thông báo', icon: Bell, badge: unreadNotifications, anchor: true },
+    { href: '/#notifications', label: 'Thông báo', ariaLabel: 'Thông báo', icon: Bell, badge: unreadNotifications, anchor: true },
   ];
 
   return (

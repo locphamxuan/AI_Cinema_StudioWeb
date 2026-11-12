@@ -65,7 +65,7 @@ async function Overview() {
           href={heroProject ? `/projects/${heroProject.id}` : '/projects'}
           className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-[#121212] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-black dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 sm:self-center"
         >
-          Bàn Giao Video Master <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+          Mở dự án &amp; Nộp phim <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </section>
 
@@ -144,7 +144,7 @@ async function Overview() {
             href={`/projects/${heroProject.id}`}
             className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-xs font-semibold text-slate-900 shadow-xs transition-all hover:bg-slate-100 dark:bg-white dark:text-slate-900 sm:self-center sm:text-sm"
           >
-            Tải lên Video Master <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            Nộp phim ngay <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </section>
       )}
@@ -152,7 +152,7 @@ async function Overview() {
       <section id="notifications" className={`${CARD} p-6`}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-white/[0.06]">
           <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
-            <Bell className="h-4 w-4" aria-hidden="true" /> Nhật ký cập nhật &amp; Thông báo
+            <Bell className="h-4 w-4" aria-hidden="true" /> Thông báo
             {unread > 0 && <Badge tone="action">{unread} chưa đọc</Badge>}
           </h2>
           {unread > 0 && (
