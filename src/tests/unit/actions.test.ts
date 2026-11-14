@@ -19,11 +19,13 @@ import { login } from '@/app/actions/auth';
 import { actOnContract } from '@/app/actions/contracts';
 import { retryDelivery } from '@/app/actions/deliveries';
 
-const form = (fields: Record<string, string>) => {
+const form = (fields: Record<string, string>, file?: File) => {
   const data = new FormData();
   for (const [key, value] of Object.entries(fields)) data.set(key, value);
+  if (file) data.set('file', file);
   return data;
 };
+const signedPdf = () => new File(['%PDF-1.4 signed'], 'hop-dong.pdf', { type: 'application/pdf' });
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 const authSession = (role: string) => ({
@@ -73,7 +75,10 @@ describe('actOnContract', () => {
     signedIn();
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
-    const state = await actOnContract({}, form({ contractId: 'c1', action: 'propose', costVnd: '1500', agree: 'on' }));
+    const state = await actOnContract(
+      {},
+      form({ contractId: 'c1', action: 'propose', costVnd: '1500', agree: 'on' }, signedPdf()),
+    );
     expect(state.error).toBe('Giá phải là bội số của 1.000 VND.');
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -84,17 +89,35 @@ describe('actOnContract', () => {
     expect(state.error).toContain('đồng ý điều khoản');
   });
 
+  it('needs the signed contract PDF, and a PDF only', async () => {
+    signedIn();
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const missing = await actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }));
+    expect(missing.error).toBe('Vui lòng đính kèm file PDF hợp đồng Studio đã ký.');
+    const image = new File(['x'], 'scan.png', { type: 'image/png' });
+    const wrong = await actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }, image));
+    expect(wrong.error).toBe('Hợp đồng đã ký phải là file PDF.');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('proposes the cost and reports the API refusal', async () => {
     signedIn();
-    const fetchMock = vi.fn<(url: string) => Promise<Response>>(async () => json({ error: { code: 'CONFLICT', message: 'The contract is not waiting for the studio' } }, 409));
+    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async () => json({ error: { code: 'CONFLICT', message: 'The contract is not waiting for the studio' } }, 409));
     vi.stubGlobal('fetch', fetchMock);
-    const state = await actOnContract({}, form({ contractId: 'c1', action: 'propose', costVnd: '170.000.000', agree: 'on' }));
+    const state = await actOnContract(
+      {},
+      form({ contractId: 'c1', action: 'propose', costVnd: '170.000.000', agree: 'on' }, signedPdf()),
+    );
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:3001/api/studio-portal/contracts/c1/propose');
+    const sent = fetchMock.mock.calls[0][1]?.body as FormData;
+    expect(sent.get('costVnd')).toBe('170000000');
+    expect((sent.get('file') as File).name).toBe('hop-dong.pdf');
     expect(state.error).toBe('Không thể thực hiện ở trạng thái hiện tại: The contract is not waiting for the studio');
   });
 
   it('asks to log in again without a session', async () => {
-    const state = await actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }));
+    const state = await actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }, signedPdf()));
     expect(state.error).toContain('đăng nhập lại');
   });
 });

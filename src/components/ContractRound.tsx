@@ -1,6 +1,13 @@
 import { Badge, Facts } from './ui';
 import { ContractActions } from './ContractActions';
-import { CONTRACT_STATUS_LABEL, CONTRACT_STATUS_TONE, contractActions } from '@/lib/domain/contract';
+import { FileDown } from 'lucide-react';
+import {
+  CONTRACT_STATUS_LABEL,
+  CONTRACT_STATUS_TONE,
+  contractActions,
+  DOCUMENT_LABEL,
+  documentHref,
+} from '@/lib/domain/contract';
 import { formatDateTime, formatVnd } from '@/lib/format';
 import type { Contract } from '@/lib/api/types';
 
@@ -33,6 +40,22 @@ export function ContractRound({ contract, withActions = true }: { contract: Cont
         <summary className="cursor-pointer font-semibold">Điều khoản hợp đồng</summary>
         <p className="mt-2.5 whitespace-pre-line leading-relaxed text-muted">{contract.terms}</p>
       </details>
+      {contract.documents && contract.documents.length > 0 && (
+        <ul className="flex flex-wrap gap-2" aria-label="Bản PDF hợp đồng">
+          {contract.documents.map((document) => (
+            <li key={document.id}>
+              <a
+                href={documentHref(contract.id, document.side)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold hover:border-accent"
+                download
+              >
+                <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+                {DOCUMENT_LABEL[document.side]}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
       {actions.length > 0 && <ContractActions contractId={contract.id} actions={actions} adminCost={contract.costVnd} />}
     </article>
   );

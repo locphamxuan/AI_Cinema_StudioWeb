@@ -57,19 +57,22 @@ describe('portalApi', () => {
     const fetchImpl = fakeFetch(200, {});
     const api = portalApi(BASE, 'tok', fetchImpl);
     await api.me();
-    await api.proposeCost('c1', 170_000_000);
-    await api.signContract('c1');
-    await api.counterCost('c1', 150_000_000);
+    const pdf = new File(['%PDF'], 'ky.pdf', { type: 'application/pdf' });
+    await api.proposeCost('c1', 170_000_000, pdf);
+    await api.signContract('c1', pdf);
+    await api.counterCost('c1', 150_000_000, pdf);
     await api.project('p/1');
     await api.notifications(5);
     await api.markAllRead();
     await api.retryDelivery('m/1');
-    const calls = fetchImpl.mock.calls.map(([url, init]) => [init?.method, url.replace(BASE, ''), init?.body]);
+    const bodyOf = (body: unknown) =>
+      body instanceof FormData ? `form:${[...body.keys()].join(',')}:${String(body.get('costVnd'))}` : body;
+    const calls = fetchImpl.mock.calls.map(([url, init]) => [init?.method, url.replace(BASE, ''), bodyOf(init?.body)]);
     expect(calls).toEqual([
       ['GET', '/studio-portal/me', undefined],
-      ['POST', '/studio-portal/contracts/c1/propose', '{"costVnd":170000000}'],
-      ['POST', '/studio-portal/contracts/c1/sign', undefined],
-      ['POST', '/studio-portal/contracts/c1/counter', '{"costVnd":150000000}'],
+      ['POST', '/studio-portal/contracts/c1/propose', 'form:file,costVnd:170000000'],
+      ['POST', '/studio-portal/contracts/c1/sign', 'form:file:null'],
+      ['POST', '/studio-portal/contracts/c1/counter', 'form:file,costVnd:150000000'],
       ['GET', '/studio-portal/projects/p%2F1', undefined],
       ['GET', '/notifications?limit=5&page=1', undefined],
       ['PATCH', '/notifications/read-all', undefined],
