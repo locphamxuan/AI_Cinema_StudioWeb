@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getConfig } from '@/lib/config';
 import { LOGIN_PATH } from '@/lib/session/paths';
-import { COOKIE, needsRefresh, refreshSession, SESSION_COOKIE_NAMES, sessionCookies } from '@/lib/session/tokens';
+import { COOKIE, kindOf, needsRefresh, refreshSession, SESSION_COOKIE_NAMES, sessionCookies } from '@/lib/session/tokens';
 
 function toLogin(request: NextRequest, expired: boolean): NextResponse {
   const url = new URL(LOGIN_PATH, request.url);
@@ -31,7 +31,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   try {
     const config = getConfig();
-    const writes = sessionCookies(await refreshSession(config.apiUrl, refresh), config.secureCookies);
+    const kind = kindOf(request.cookies.get(COOKIE.kind)?.value);
+    const writes = sessionCookies(await refreshSession(config.apiUrl, refresh, kind), config.secureCookies, kind);
     for (const { name, value } of writes) request.cookies.set(name, value);
     const headers = new Headers(request.headers);
     headers.set('cookie', request.cookies.toString());

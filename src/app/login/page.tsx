@@ -1,12 +1,27 @@
-import { Clapperboard } from 'lucide-react';
+import { Clapperboard, KeyRound } from 'lucide-react';
 import { LoginForm } from '@/components/LoginForm';
+import { getConfig } from '@/lib/config';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { CARD } from '@/components/ui';
+import { BUTTON, CARD, ErrorCard } from '@/components/ui';
+
+/** Why the OAuth callback sent the studio back here (?error=...). */
+const OAUTH_ERROR: Record<string, string> = {
+  denied: 'Bạn đã từ chối cấp quyền cho Studio Web.',
+  state: 'Phiên đăng nhập không khớp hoặc đã quá 10 phút, vui lòng thử lại.',
+  network: 'Không kết nối được tới máy chủ AI Cinema.',
+  oauth: 'AI Cinema không xác nhận được đăng nhập (chỉ tài khoản Studio có hợp đồng mới được cấp quyền).',
+};
 
 export const metadata = { title: 'Đăng nhập - Studio Web' };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ expired?: string }> }) {
-  const { expired } = await searchParams;
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ expired?: string; error?: string }>;
+}) {
+  const { expired, error } = await searchParams;
+  const { passwordLogin } = getConfig();
+  const notice = expired ? 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.' : undefined;
   return (
     <main className="relative mx-auto flex min-h-screen flex-col items-center justify-center bg-[#F9FAFB] px-4 py-12 text-slate-900 dark:bg-[#090B10] dark:text-slate-100 sm:px-6">
       <div className="absolute top-5 right-5">
@@ -30,7 +45,19 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             </p>
           </div>
         </div>
-        <LoginForm notice={expired ? 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.' : undefined} />
+        {error && <ErrorCard message={OAUTH_ERROR[error] ?? OAUTH_ERROR.oauth} />}
+        {!passwordLogin && notice && !error && <ErrorCard message={notice} />}
+        {/* A full page navigation: the route answers a redirect to the AI Cinema consent screen. */}
+        <a href="/api/auth/login" className={`${BUTTON} w-full justify-center py-3`}>
+          <KeyRound className="h-4 w-4" aria-hidden="true" />
+          Đăng nhập bằng tài khoản AI Cinema
+        </a>
+        {passwordLogin && (
+          <div className="space-y-4 border-t border-border pt-5">
+            <p className="text-center text-[11px] text-muted">Hoặc đăng nhập trực tiếp (môi trường phát triển)</p>
+            <LoginForm notice={error ? undefined : notice} />
+          </div>
+        )}
       </div>
       <p className="mt-6 text-center text-[11px] text-slate-500 dark:text-slate-400">
         Cổng đối tác sản xuất bên ngoài · Tuân thủ quy trình bàn giao MF-1 &amp; Điều 44

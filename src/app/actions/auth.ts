@@ -4,10 +4,10 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getConfig } from '@/lib/config';
 import { ApiError, describeError } from '@/lib/api/http';
-import { authApi } from '@/lib/api/portal';
+import { authApi, oauthApi } from '@/lib/api/portal';
 import { LOGIN_PATH } from '@/lib/session/paths';
 import { clearSession, saveSession } from '@/lib/session/server';
-import { COOKIE, isStudio, NOT_STUDIO_MESSAGE } from '@/lib/session/tokens';
+import { COOKIE, isStudio, kindOf, NOT_STUDIO_MESSAGE } from '@/lib/session/tokens';
 
 export interface LoginState {
   error?: string;
@@ -16,6 +16,7 @@ export interface LoginState {
 
 /** Logs in with an AI Cinema account; only STUDIO accounts may use this site. */
 export async function login(_previous: LoginState, form: FormData): Promise<LoginState> {
+  if (!getConfig().passwordLogin) return { error: 'Vui lòng đăng nhập bằng tài khoản AI Cinema.' };
   const email = String(form.get('email') ?? '').trim();
   const password = String(form.get('password') ?? '');
   if (!email || !password) return { error: 'Vui lòng nhập email và mật khẩu.', email };
@@ -37,8 +38,16 @@ export async function login(_previous: LoginState, form: FormData): Promise<Logi
 }
 
 export async function logout(): Promise<void> {
-  const refresh = (await cookies()).get(COOKIE.refresh)?.value;
-  if (refresh) await authApi(getConfig().apiUrl).logout(refresh).catch(() => undefined);
+  const store = await cookies();
+  const refresh = store.get(COOKIE.refresh)?.value;
+  if (refresh) {
+    const config = getConfig();
+    const ending =
+      kindOf(store.get(COOKIE.kind)?.value) === 'oauth'
+        ? oauthApi(config.apiUrl, config.oauth).revoke(refresh)
+        : authApi(config.apiUrl).logout(refresh);
+    await ending.catch(() => undefined);
+  }
   await clearSession();
   redirect(LOGIN_PATH);
 }
