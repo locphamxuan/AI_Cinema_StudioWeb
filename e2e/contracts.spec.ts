@@ -2,7 +2,12 @@ import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 
 const project = (page: Page, title: string) => page.locator('section').filter({ has: page.getByRole('heading', { name: title }) });
-const agree = (card: Locator) => card.getByLabel('Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.').check();
+const signedPdf = { name: 'hop-dong-da-ky.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 signed') };
+/** Attach the contract PDF the studio signed and accept the terms: every signing move needs both. */
+const agree = async (card: Locator) => {
+  await card.getByLabel('Hợp đồng Studio đã ký (PDF, tối đa 10 MB)').setInputFiles(signedPdf);
+  await card.getByLabel('Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.').check();
+};
 
 test.beforeEach(async ({ loggedIn: page }) => {
   await page.getByRole('link', { name: 'Hợp đồng', exact: true }).click();
@@ -23,6 +28,9 @@ test('signs the cost the Admin countered', async ({ page }) => {
   await card.getByRole('button', { name: 'Đồng ý giá và ký' }).click();
   await expect(card.getByText('Đã ký đủ')).toBeVisible();
   await expect(card.getByRole('button', { name: 'Đồng ý giá và ký' })).toHaveCount(0);
+  const download = page.waitForEvent('download');
+  await card.getByRole('link', { name: 'Bản cuối (đủ hai chữ ký)' }).first().click();
+  expect((await download).suggestedFilename()).toBe('hop-dong-final.pdf');
 });
 
 test('counters the Admin with another cost, which opens a new round', async ({ page }) => {

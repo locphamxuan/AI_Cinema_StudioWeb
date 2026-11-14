@@ -2,13 +2,15 @@
 // It answers the endpoints Studio Web calls with the shapes of the real API (`/api/auth/*`, `/api/studio-portal/*`,
 // `/api/notifications*`), keeps its data in memory, and goes back to the seed on `POST /__test/reset`.
 import { createServer } from 'node:http';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { seed, STUDIO_ACCOUNT } from './seed.mjs';
 
 const PORT = Number(process.env.FAKE_API_PORT ?? 3299);
 
 let db = seed();
 const tokens = { access: new Set(), refresh: new Set() };
+/** OAuth codes waiting for their exchange: code -> { challenge, redirectUri }. */
+const codes = new Map();
 
 const send = (res, status, body) => {
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -16,13 +18,24 @@ const send = (res, status, body) => {
 };
 const fail = (res, status, code, message) => send(res, status, { error: { code, message } });
 
-async function readJson(req) {
+/** JSON, urlencoded (OAuth) or multipart (signed PDF + costVnd) bodies, read loosely as the tests need. */
+async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
   const text = Buffer.concat(chunks).toString('utf8');
-  if (!text || !(req.headers['content-type'] ?? '').startsWith('application/json')) return {};
-  return JSON.parse(text);
+  const type = req.headers['content-type'] ?? '';
+  if (!text) return {};
+  if (type.startsWith('application/json')) return JSON.parse(text);
+  if (type.startsWith('application/x-www-form-urlencoded')) return Object.fromEntries(new URLSearchParams(text));
+  if (type.startsWith('multipart/form-data')) {
+    const cost = text.match(/name="costVnd"\r\n\r\n(\d+)/);
+    const file = text.match(/name="file"; filename="([^"]+)"/);
+    return { costVnd: cost ? Number(cost[1]) : undefined, fileName: file?.[1] };
+  }
+  return {};
 }
+
+const PDF = '%PDF-1.4\n% fake signed contract\n%%EOF';
 
 function issueSession() {
   const accessToken = `access-${randomUUID()}`;
@@ -31,6 +44,36 @@ function issueSession() {
   tokens.refresh.add(refreshToken);
   const { id, email, fullName, role } = STUDIO_ACCOUNT;
   return { accessToken, accessTokenExpiresIn: 1800, refreshToken, user: { id, email, fullName, role, permissions: [] } };
+}
+
+const oauthTokens = () => {
+  const session = issueSession();
+  return { access_token: session.accessToken, token_type: 'Bearer', expires_in: 1800, refresh_token: session.refreshToken, scope: 'studio:portal' };
+};
+const oauthFail = (res, error) => send(res, 400, { error, error_description: error });
+
+/** The consent screen of AI_Cinema_FE, answered at once: redirects back to Studio Web with a code (or a denial). */
+function authorize(res, params) {
+  const code = randomUUID();
+  codes.set(code, { challenge: params.get('code_challenge'), redirectUri: params.get('redirect_uri') });
+  const back = new URL(params.get('redirect_uri'));
+  if (params.get('deny')) back.searchParams.set('error', 'access_denied');
+  else back.searchParams.set('code', code);
+  back.searchParams.set('state', params.get('state'));
+  res.writeHead(302, { Location: back.toString() });
+  res.end();
+}
+
+function oauthToken(res, body) {
+  if (body.client_id !== 'studio-web') return send(res, 401, { error: 'invalid_client' });
+  if (body.grant_type === 'refresh_token') {
+    return tokens.refresh.delete(body.refresh_token) ? send(res, 200, oauthTokens()) : oauthFail(res, 'invalid_grant');
+  }
+  const pending = codes.get(body.code);
+  codes.delete(body.code);
+  const challenge = createHash('sha256').update(body.code_verifier ?? '').digest('base64url');
+  if (!pending || pending.redirectUri !== body.redirect_uri || pending.challenge !== challenge) return oauthFail(res, 'invalid_grant');
+  return send(res, 200, oauthTokens());
 }
 
 const now = () => new Date().toISOString();
@@ -63,19 +106,31 @@ function openNextRound(contract, fields) {
 
 const CONTRACT_MOVES = {
   propose: { from: 'SENT', apply: (c, cost) => Object.assign(c, { costVnd: cost, proposedBy: 'STUDIO', status: 'STUDIO_SIGNED', studioSignedAt: now() }) },
-  sign: { from: 'ADMIN_COUNTERED', apply: (c) => Object.assign(c, { status: 'SIGNED', studioSignedAt: now() }) },
+  sign: {
+    from: 'ADMIN_COUNTERED',
+    apply: (c) => {
+      c.documents = [...(c.documents ?? []), document('FINAL', 'hop-dong-final.pdf')];
+      return Object.assign(c, { status: 'SIGNED', studioSignedAt: now() });
+    },
+  },
   counter: {
     from: 'ADMIN_COUNTERED',
     apply: (c, cost) => openNextRound(c, { costVnd: cost, proposedBy: 'STUDIO', status: 'STUDIO_SIGNED', studioSignedAt: now() }),
   },
 };
 
+function document(side, fileName) {
+  return { id: randomUUID(), side, fileName, sizeBytes: PDF.length, checksum: 'fake', uploadedAt: now() };
+}
+
 function contractMove(res, contractId, move, body) {
   const contract = db.contracts.find((c) => c.id === contractId);
   if (!contract) return fail(res, 404, 'NOT_FOUND', 'Contract not found');
+  if (!body.fileName) return fail(res, 400, 'BAD_REQUEST', 'Attach the signed contract PDF in the "file" field');
   const rule = CONTRACT_MOVES[move];
   if (contract.status !== rule.from) return fail(res, 409, 'CONFLICT', `The contract is ${contract.status}, it cannot ${move}`);
   const updated = rule.apply(contract, body.costVnd) ?? contract;
+  updated.documents = [...(updated.documents ?? []).filter((d) => d.side !== 'STUDIO'), document('STUDIO', body.fileName)];
   updated.updatedAt = now();
   return send(res, 201, withRefs(updated));
 }
@@ -120,12 +175,18 @@ async function route(req, res) {
   const url = new URL(req.url, 'http://fake');
   const path = url.pathname.replace(/^\/api/, '');
   const method = req.method;
-  const body = await readJson(req);
+  const body = await readBody(req);
 
   if (method === 'GET' && path === '/__health') return send(res, 200, { ok: true });
   if (method === 'POST' && path === '/__test/reset') {
     db = seed();
     return send(res, 204);
+  }
+  if (method === 'GET' && path === '/oauth/authorize') return authorize(res, url.searchParams);
+  if (method === 'POST' && path === '/oauth/token') return oauthToken(res, body);
+  if (method === 'POST' && path === '/oauth/revoke') {
+    tokens.refresh.delete(body.token);
+    return send(res, 200, {});
   }
   if (method === 'POST' && path === '/auth/login') {
     const ok = body.email === STUDIO_ACCOUNT.email && body.password === STUDIO_ACCOUNT.password;
@@ -150,6 +211,12 @@ async function route(req, res) {
   }
   if (method === 'POST' && (match = path.match(/^\/studio-portal\/contracts\/([^/]+)\/(propose|sign|counter)$/))) {
     return contractMove(res, match[1], match[2], body);
+  }
+  if (method === 'GET' && (match = path.match(/^\/studio-portal\/contracts\/([^/]+)\/documents\/(ADMIN|STUDIO|FINAL)\/content$/))) {
+    const doc = db.contracts.find((c) => c.id === match[1])?.documents?.find((d) => d.side === match[2]);
+    if (!doc) return fail(res, 404, 'NOT_FOUND', 'That contract has no such signed PDF yet');
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${doc.fileName}"` });
+    return res.end(PDF);
   }
   if (method === 'GET' && path === '/studio-portal/projects') return send(res, 200, db.projects.map(projectSummary));
   if (method === 'GET' && (match = path.match(/^\/studio-portal\/projects\/([^/]+)$/))) {
