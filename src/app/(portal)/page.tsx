@@ -5,7 +5,7 @@ import { Badge, CARD, EmptyNote, Facts, Guarded } from '@/components/ui';
 import { needsStudio } from '@/lib/domain/contract';
 import { PROJECT_STATUS_LABEL } from '@/lib/domain/episode';
 import { formatDateTime, formatVnd } from '@/lib/format';
-import { pagePortal } from '@/lib/session/server';
+import { loadContracts, loadNotifications, loadProjects, loadStudio } from '@/lib/session/portal-data';
 import type { PortalNotification } from '@/lib/api/types';
 
 export const metadata = { title: 'Tổng quan - Studio Web' };
@@ -37,12 +37,11 @@ function NotificationItem({ item }: { item: PortalNotification }) {
 }
 
 async function Overview() {
-  const api = await pagePortal();
   const [studio, contracts, projects, notifications] = await Promise.all([
-    api.me(),
-    api.contracts(),
-    api.projects(),
-    api.notifications(20),
+    loadStudio(),
+    loadContracts(),
+    loadProjects(),
+    loadNotifications(),
   ]);
   const waiting = contracts.filter(needsStudio).length;
   const producingList = projects.filter((project) => project.status === 'IN_PRODUCTION');

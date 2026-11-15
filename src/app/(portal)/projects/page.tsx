@@ -4,12 +4,12 @@ import { Badge, CARD, EmptyNote, Guarded, PageTitle } from '@/components/ui';
 import { CONTRACT_STATUS_LABEL, CONTRACT_STATUS_TONE } from '@/lib/domain/contract';
 import { PROJECT_STATUS_LABEL } from '@/lib/domain/episode';
 import { formatDateTime, formatVnd } from '@/lib/format';
-import { pagePortal } from '@/lib/session/server';
+import { loadProjects } from '@/lib/session/portal-data';
 
 export const metadata = { title: 'Dự án - Studio Web' };
 
 async function Projects() {
-  const projects = await (await pagePortal()).projects();
+  const projects = await loadProjects();
   if (!projects.length) return <EmptyNote>Studio chưa có dự án nào.</EmptyNote>;
   return (
     <ul className="grid gap-4 md:grid-cols-2">

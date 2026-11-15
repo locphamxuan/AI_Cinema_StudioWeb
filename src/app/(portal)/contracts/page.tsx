@@ -3,12 +3,12 @@ import { ArrowRight } from 'lucide-react';
 import { ContractRound } from '@/components/ContractRound';
 import { BUTTON_GHOST, CARD, EmptyNote, Guarded, PageTitle } from '@/components/ui';
 import { groupByProject } from '@/lib/domain/contract';
-import { pagePortal } from '@/lib/session/server';
+import { loadContracts } from '@/lib/session/portal-data';
 
 export const metadata = { title: 'Hợp đồng - Studio Web' };
 
 async function Contracts() {
-  const contracts = await (await pagePortal()).contracts();
+  const contracts = await loadContracts();
   if (!contracts.length) return <EmptyNote>AI Cinema chưa gửi hợp đồng nào cho Studio.</EmptyNote>;
   return (
     <div className="space-y-5">

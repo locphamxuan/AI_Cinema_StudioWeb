@@ -1,25 +1,24 @@
 import { unstable_rethrow } from 'next/navigation';
 import { PortalHeader } from '@/components/PortalHeader';
 import { needsStudio } from '@/lib/domain/contract';
-import { pagePortal } from '@/lib/session/server';
+import { loadContracts, loadNotifications, loadProjects, loadStudio } from '@/lib/session/portal-data';
 
 /** Every screen after login: fixed left Contra sidebar, studio profile and page content. */
 export default async function PortalLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const api = await pagePortal();
   const [studio, contracts, projects, notifications] = await Promise.all([
-    api.me().catch((error: unknown) => {
+    loadStudio().catch((error: unknown) => {
       unstable_rethrow(error);
       return null;
     }),
-    api.contracts().catch((error: unknown) => {
+    loadContracts().catch((error: unknown) => {
       unstable_rethrow(error);
       return [];
     }),
-    api.projects().catch((error: unknown) => {
+    loadProjects().catch((error: unknown) => {
       unstable_rethrow(error);
       return [];
     }),
-    api.notifications(20).catch((error: unknown) => {
+    loadNotifications().catch((error: unknown) => {
       unstable_rethrow(error);
       return { data: [] };
     }),
