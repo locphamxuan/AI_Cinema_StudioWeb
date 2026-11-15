@@ -13,6 +13,9 @@ vi.mock('next/navigation', () => ({
   redirect: (url: string) => {
     throw new Error(`REDIRECT ${url}`);
   },
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message.startsWith('REDIRECT')) throw error;
+  },
 }));
 const revalidatePath = vi.fn();
 vi.mock('next/cache', () => ({ revalidatePath: (...args: unknown[]) => revalidatePath(...args) }));
@@ -93,8 +96,18 @@ describe('withPortal', () => {
     expect(fetchMock).toHaveBeenCalledWith('http://localhost:3001/api/studio-portal/me', expect.anything());
   });
 
-  it('throws a 401 the form can show when there is no session', async () => {
-    await expect(withPortal((api) => api.me())).rejects.toMatchObject({ status: 401 });
+  it('sends the studio to the login page when there is no session', async () => {
+    await expect(withPortal((api) => api.me())).rejects.toThrow('REDIRECT /login?expired=1');
+  });
+
+  it('ends the session when the API refuses the token, and passes other errors on', async () => {
+    signedIn();
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'UNAUTHORIZED', message: 'Invalid token' } }, 401)));
+    await expect(withPortal((api) => api.me())).rejects.toThrow('REDIRECT /login?expired=1');
+    expect(jar.size).toBe(0);
+    signedIn();
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'CONFLICT', message: 'no' } }, 409)));
+    await expect(withPortal((api) => api.me())).rejects.toMatchObject({ status: 409 });
   });
 });
 
@@ -126,7 +139,13 @@ describe('markAllNotificationsRead', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/');
   });
 
-  it('does not break the page when the session is gone', async () => {
+  it('sends the studio to the login page when the session is gone', async () => {
+    await expect(markAllNotificationsRead()).rejects.toThrow('REDIRECT /login?expired=1');
+  });
+
+  it('keeps the page when the API fails for another reason', async () => {
+    signedIn();
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'X', message: 'down' } }, 500)));
     await expect(markAllNotificationsRead()).resolves.toBeUndefined();
     expect(revalidatePath).toHaveBeenCalledWith('/');
   });

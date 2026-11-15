@@ -12,6 +12,9 @@ vi.mock('next/navigation', () => ({
   redirect: (url: string) => {
     throw new Error(`REDIRECT ${url}`);
   },
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message.startsWith('REDIRECT')) throw error;
+  },
 }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
@@ -116,9 +119,19 @@ describe('actOnContract', () => {
     expect(state.error).toBe('Không thể thực hiện ở trạng thái hiện tại: The contract is not waiting for the studio');
   });
 
-  it('asks to log in again without a session', async () => {
-    const state = await actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }, signedPdf()));
-    expect(state.error).toContain('đăng nhập lại');
+  it('sends the studio to the login page without a session', async () => {
+    await expect(actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }, signedPdf()))).rejects.toThrow(
+      'REDIRECT /login?expired=1',
+    );
+  });
+
+  it('ends the session when the API refuses the token', async () => {
+    signedIn();
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'UNAUTHORIZED', message: 'Invalid token' } }, 401)));
+    await expect(actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }, signedPdf()))).rejects.toThrow(
+      'REDIRECT /login?expired=1',
+    );
+    expect(jar.size).toBe(0);
   });
 });
 
@@ -147,6 +160,6 @@ describe('retryDelivery', () => {
 
   it('needs a delivery and a session', async () => {
     expect((await retryDelivery({}, form({}))).error).toBe('Yêu cầu không hợp lệ.');
-    expect((await retryDelivery({}, form({ mediaAssetId: 'm1' }))).error).toContain('đăng nhập lại');
+    await expect(retryDelivery({}, form({ mediaAssetId: 'm1' }))).rejects.toThrow('REDIRECT /login?expired=1');
   });
 });
