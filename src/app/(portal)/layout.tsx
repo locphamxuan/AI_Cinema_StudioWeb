@@ -32,6 +32,12 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F9FAFB] text-slate-900 dark:bg-[#090B10] dark:text-slate-100 md:flex-row">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-card focus:px-4 focus:py-2 focus:text-sm focus:font-semibold"
+      >
+        Bỏ qua tới nội dung chính
+      </a>
       <PortalHeader
         studioName={studioName}
         contactLabel={contactLabel}
@@ -39,7 +45,7 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
         producingProjects={producingProjects}
         unreadNotifications={unreadNotifications}
       />
-      <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 space-y-6 p-4 sm:p-6 lg:p-8">{children}</main>
+      <main id="main" className="mx-auto w-full min-w-0 max-w-6xl flex-1 space-y-6 p-4 sm:p-6 lg:p-8">{children}</main>
     </div>
   );
 }
