@@ -77,6 +77,19 @@ export function ContractActions({
         </p>
       )}
       {needsCost && <CostField value={cost} onChange={setCost} />}
+      <label className="block space-y-1.5 text-sm">
+        <span className="block text-xs font-semibold text-muted">Hợp đồng Studio đã ký (PDF, tối đa 10 MB)</span>
+        <input
+          name="file"
+          type="file"
+          accept="application/pdf,.pdf"
+          required
+          className={`${INPUT} file:mr-3 file:rounded-full file:border-0 file:bg-accent file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white dark:file:text-slate-900`}
+        />
+        <span className="block text-xs text-muted">
+          In điều khoản ở trên{needsCost ? ' kèm giá đã nhập' : ''}, ký và đóng dấu rồi tải bản PDF lên; hệ thống ghép với bản Admin đã ký.
+        </span>
+      </label>
       <label className="flex items-start gap-2.5 text-sm cursor-pointer">
         <input type="checkbox" name="agree" required className="mt-0.5 h-4 w-4 accent-[var(--accent)]" />
         <span>Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.</span>

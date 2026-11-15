@@ -13,11 +13,12 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('session cookies', () => {
   it('stores the tokens in httpOnly, SameSite=Lax cookies with the access expiry', () => {
-    const cookies = sessionCookies(session(), true, 1_000);
+    const cookies = sessionCookies(session(), true, 'oauth', 1_000);
     expect(cookies.map((c) => [c.name, c.value, c.options.maxAge])).toEqual([
       [COOKIE.access, 'access-2', 1800],
       [COOKIE.expires, String(1_000 + 1_800_000), 1800],
       [COOKIE.refresh, 'refresh-2', 30 * 24 * 3600],
+      [COOKIE.kind, 'oauth', 30 * 24 * 3600],
     ]);
     expect(cookies.every((c) => c.options.httpOnly && c.options.secure && c.options.sameSite === 'lax')).toBe(true);
   });

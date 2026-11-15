@@ -12,7 +12,29 @@ export interface AuthSession {
   accessToken: string;
   accessTokenExpiresIn: number;
   refreshToken: string;
-  user: AuthUser;
+  /** Absent on an OAuth session: the `studio:portal` scope is only ever granted to a STUDIO account. */
+  user?: AuthUser;
+}
+
+/** RFC 6749 §5.1, as AI Cinema's /oauth/token answers it. */
+export interface OAuthTokenResponse {
+  access_token: string;
+  token_type: 'Bearer';
+  expires_in: number;
+  refresh_token: string;
+  scope: string;
+}
+
+export type ContractDocumentSide = 'ADMIN' | 'STUDIO' | 'FINAL';
+
+/** A signed contract PDF of a round (metadata only; the file is downloaded through /api/contracts/...). */
+export interface ContractDocument {
+  id: string;
+  side: ContractDocumentSide;
+  fileName: string;
+  sizeBytes: number | string;
+  checksum: string;
+  uploadedAt: string;
 }
 
 export interface StudioProfile {
@@ -47,6 +69,7 @@ export interface Contract {
   updatedAt: string;
   studio?: { id: string; name: string };
   project?: { id: string; movie?: { title: string } | null } | null;
+  documents?: ContractDocument[];
 }
 
 export type ProjectStatus = 'DRAFT' | 'ASSIGNED' | 'IN_PRODUCTION' | 'COMPLETED' | 'UNDER_REVISION' | 'CANCELLED';

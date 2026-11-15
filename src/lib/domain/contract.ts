@@ -47,6 +47,32 @@ export function parseCostVnd(input: string): CostParse {
   return { ok: true, value };
 }
 
+/** Same limit as the API (CONTRACT_PDF_MAX_BYTES). */
+export const CONTRACT_PDF_MAX_BYTES = 10 * 1024 * 1024;
+
+export type PdfCheck = { ok: true; file: File } | { ok: false; message: string };
+
+/** Every signing move carries the contract PDF the studio signed (BE: field `file`, PDF, at most 10 MB). */
+export function checkSignedPdf(value: FormDataEntryValue | null): PdfCheck {
+  if (!(value instanceof File) || value.size === 0) {
+    return { ok: false, message: 'Vui lòng đính kèm file PDF hợp đồng Studio đã ký.' };
+  }
+  const isPdf = value.type === 'application/pdf' || value.name.toLowerCase().endsWith('.pdf');
+  if (!isPdf) return { ok: false, message: 'Hợp đồng đã ký phải là file PDF.' };
+  if (value.size > CONTRACT_PDF_MAX_BYTES) return { ok: false, message: 'File PDF tối đa 10 MB.' };
+  return { ok: true, file: value };
+}
+
+export const DOCUMENT_LABEL: Record<'ADMIN' | 'STUDIO' | 'FINAL', string> = {
+  ADMIN: 'Bản Admin đã ký',
+  STUDIO: 'Bản Studio đã ký',
+  FINAL: 'Bản cuối (đủ hai chữ ký)',
+};
+
+/** Where the browser downloads a signed PDF: Studio Web's own route, which adds the session's token. */
+export const documentHref = (contractId: string, side: string) =>
+  `/api/contracts/${encodeURIComponent(contractId)}/documents/${side}`;
+
 const contractTitle = (contract: Contract) => contract.project?.movie?.title ?? 'Dự án';
 
 /** True once a round of the project carries both signatures: only then may the studio deliver films. */

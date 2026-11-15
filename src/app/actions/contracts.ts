@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { describeError } from '@/lib/api/http';
-import { parseCostVnd, type ContractAction } from '@/lib/domain/contract';
+import { checkSignedPdf, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
 import { withPortal } from '@/lib/session/server';
 
 export interface ContractActionState {
@@ -23,6 +23,9 @@ export async function actOnContract(_previous: ContractActionState, form: FormDa
   if (!contractId || !(action in DONE)) return { error: 'Yêu cầu không hợp lệ.' };
   if (form.get('agree') !== 'on') return { error: 'Vui lòng xác nhận đã đọc và đồng ý điều khoản trước khi ký.' };
 
+  const pdf = checkSignedPdf(form.get('file'));
+  if (!pdf.ok) return { error: pdf.message };
+
   let cost = 0;
   if (action !== 'sign') {
     const parsed = parseCostVnd(String(form.get('costVnd') ?? ''));
@@ -31,9 +34,9 @@ export async function actOnContract(_previous: ContractActionState, form: FormDa
   }
   try {
     await withPortal((api) => {
-      if (action === 'propose') return api.proposeCost(contractId, cost);
-      if (action === 'counter') return api.counterCost(contractId, cost);
-      return api.signContract(contractId);
+      if (action === 'propose') return api.proposeCost(contractId, cost, pdf.file);
+      if (action === 'counter') return api.counterCost(contractId, cost, pdf.file);
+      return api.signContract(contractId, pdf.file);
     });
   } catch (error) {
     return { error: describeError(error) };

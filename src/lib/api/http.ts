@@ -18,6 +18,10 @@ export interface ApiRequest {
   token?: string;
   /** Sent as JSON. */
   json?: unknown;
+  /** Sent as multipart/form-data (the boundary is set by fetch). */
+  form?: FormData;
+  /** Sent as application/x-www-form-urlencoded (the OAuth token endpoint). */
+  urlencoded?: Record<string, string>;
   fetchImpl?: FetchLike;
 }
 
@@ -56,16 +60,23 @@ async function toApiError(response: Response): Promise<ApiError> {
 
 /** Calls `{baseUrl}{path}` and returns its JSON (undefined for 204); throws ApiError on a non-2xx answer. */
 export async function apiRequest<T>(baseUrl: string, path: string, request: ApiRequest = {}): Promise<T> {
-  const { method = 'GET', token, json, fetchImpl = fetch } = request;
+  const { method = 'GET', token, json, form, urlencoded, fetchImpl = fetch } = request;
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (json !== undefined) headers['Content-Type'] = 'application/json';
+  let body: BodyInit | undefined = form;
+  if (json !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify(json);
+  } else if (urlencoded) {
+    headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    body = new URLSearchParams(urlencoded).toString();
+  }
   let response: Response;
   try {
     response = await fetchImpl(`${baseUrl}${path}`, {
       method,
       headers,
-      body: json === undefined ? undefined : JSON.stringify(json),
+      body,
       cache: 'no-store',
     });
   } catch {

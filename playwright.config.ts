@@ -31,7 +31,14 @@ export default defineConfig({
       url: `http://localhost:${APP_PORT}/login`,
       reuseExistingServer: false,
       timeout: 300_000,
-      env: { AI_CINEMA_API_URL: FAKE_API_URL, COOKIE_SECURE: 'false' },
+      env: {
+        AI_CINEMA_API_URL: FAKE_API_URL,
+        // The fake API also plays the consent screen of AI_Cinema_FE (GET /oauth/authorize answers at once).
+        AI_CINEMA_WEB_URL: `http://localhost:${FAKE_API_PORT}`,
+        STUDIO_WEB_URL: `http://localhost:${APP_PORT}`,
+        STUDIO_PASSWORD_LOGIN: 'true',
+        COOKIE_SECURE: 'false',
+      },
     },
   ],
 });
