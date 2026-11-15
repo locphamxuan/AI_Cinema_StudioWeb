@@ -27,23 +27,41 @@ export interface SubmissionInput {
 }
 
 const VIDEO_FILE = /\.(mp4|mov)$/i;
+const VIDEO_TYPES = ['', 'video/mp4', 'video/quicktime'];
 const NOTE_MAX = 2000;
+/** The API's limit on a link (SubmitMediaLinkRequestDto.sourceUrl). */
+const URL_MAX = 1000;
+/** The API's default upload limit (MEDIA_MAX_UPLOAD_MB = 2048). */
+export const FILM_MAX_BYTES = 2048 * 1024 * 1024;
 
-/** The same rules the API enforces (BR-41 disclosure, MP4/MOV file, http(s) link), checked before sending. */
+function linkProblem(method: SourceMethod, raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return 'Vui lòng nhập đường dẫn phim.';
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return 'Đường dẫn phim phải là địa chỉ http(s) hợp lệ.';
+  }
+  if (!['http:', 'https:'].includes(url.protocol)) return 'Đường dẫn phim phải là địa chỉ http(s) hợp lệ.';
+  if (value.length > URL_MAX) return `Đường dẫn phim tối đa ${URL_MAX} ký tự.`;
+  if (method === 'HLS_URL' && !/\.m3u8$/i.test(url.pathname)) return 'Link HLS phải trỏ tới playlist .m3u8.';
+  return null;
+}
+
+function fileProblem(file: File | null): string | null {
+  if (!file) return 'Vui lòng chọn tệp phim.';
+  if (!VIDEO_FILE.test(file.name) || !VIDEO_TYPES.includes(file.type)) return 'Tệp phim phải là MP4 hoặc MOV.';
+  if (file.size === 0) return 'Tệp phim đang rỗng.';
+  if (file.size > FILM_MAX_BYTES) return 'Tệp phim tối đa 2 GB; tệp lớn hơn hãy nộp bằng link.';
+  return null;
+}
+
+/** The same rules the API enforces (BR-41 disclosure, MP4/MOV file up to 2 GB, http(s) link), checked before sending. */
 export function validateSubmission(input: SubmissionInput): string[] {
   const errors: string[] = [];
-  if (input.method === 'UPLOAD') {
-    if (!input.file) errors.push('Vui lòng chọn tệp phim.');
-    else if (!VIDEO_FILE.test(input.file.name)) errors.push('Tệp phim phải là MP4 hoặc MOV.');
-  } else {
-    let valid = false;
-    try {
-      valid = ['http:', 'https:'].includes(new URL(input.url.trim()).protocol);
-    } catch {
-      valid = false;
-    }
-    if (!valid) errors.push('Đường dẫn phim phải là địa chỉ http(s) hợp lệ.');
-  }
+  const source = input.method === 'UPLOAD' ? fileProblem(input.file) : linkProblem(input.method, input.url);
+  if (source) errors.push(source);
   if (!input.disclosure.aiGeneratedParts.length) errors.push('Chọn ít nhất một phần có dùng AI.');
   if (!input.disclosure.noRealPersonLikeness) errors.push('Studio phải cam kết không dùng hình ảnh người thật gây hiểu lầm.');
   if (!input.disclosure.noCopyrightedMaterial) errors.push('Studio phải cam kết không dùng tư liệu có bản quyền của bên thứ ba.');

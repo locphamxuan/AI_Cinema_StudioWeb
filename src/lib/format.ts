@@ -43,3 +43,16 @@ export function daysUntil(iso: string | null | undefined, now = new Date()): num
   const day = (d: Date) => Date.parse(`${DAY_KEY.format(d)}T00:00:00Z`);
   return Math.round((day(date) - day(now)) / 86_400_000);
 }
+
+/** 1536 → "1,5 KB"; sizes of films and contract PDFs. */
+export function formatBytes(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = Math.max(0, bytes);
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  const digits = unit === 0 || value >= 100 ? 0 : 1;
+  return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: digits }).format(value)} ${units[unit]}`;
+}
