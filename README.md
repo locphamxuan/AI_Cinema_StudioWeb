@@ -11,6 +11,11 @@ calls the AI Cinema API with that account, so films are exchanged only inside th
 | Dự án | Final Script, episodes with deadlines and status, latest delivery, the Reviewer's change requests; processes a failed delivery again. |
 | Nộp phim | Delivers one episode to the Reviewer (MP4/MOV file or link) with the mandatory AI Disclosure and a proposed AI label. |
 
+Signing a contract round, delivering a film and processing a failed delivery again each open a confirmation that repeats
+what will be sent (cost, PDF, file or link, proposed label). The browser checks the same limits as the API first: the signed
+PDF at most 10 MB, a film MP4/MOV up to 2 GB (`MEDIA_MAX_UPLOAD_MB` default), an http(s) link of at most 1000 characters,
+an `.m3u8` playlist for HLS.
+
 A film can be delivered only once the contract carries both signatures and the episode is `AWAITING_MEDIA`, `IN_REVIEW` or
 `CHANGES_REQUESTED`. The API enforces this too and its errors are shown as they come.
 
@@ -49,6 +54,8 @@ The tokens live in httpOnly, SameSite=Lax cookies set by this site; page scripts
 
 - `src/proxy.ts` swaps the refresh token for a new pair shortly before the access token expires. A refresh token works once, so
   concurrent requests share the refresh already running.
+- When the API refuses the token, pages, Server Actions and the PDF download end the session and open
+  `/login?expired=1`; the film form does the same on a 401 from the upload route.
 - Server Actions and the upload route refresh the same way. The upload route is outside the proxy, because the proxy would buffer
   the body; it streams the file straight to the API.
 
@@ -67,7 +74,7 @@ src/
   components/         screens and forms
   lib/
     api/              API client, response types, film upload
-    session/          cookies, rotation, session helpers for pages and mutations
+    session/          cookies, rotation, session helpers for pages and mutations, per-request portal data
     domain/           contract, episode and submission rules, Vietnamese labels
   tests/unit/         Vitest
 e2e/                  Playwright tests and the fake API they run against

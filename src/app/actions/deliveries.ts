@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { unstable_rethrow } from 'next/navigation';
 import { describeError } from '@/lib/api/http';
 import { withPortal } from '@/lib/session/server';
 
@@ -16,6 +17,7 @@ export async function retryDelivery(_previous: RetryDeliveryState, form: FormDat
   try {
     await withPortal((api) => api.retryDelivery(mediaAssetId));
   } catch (error) {
+    unstable_rethrow(error);
     return { error: describeError(error) };
   }
   revalidatePath('/', 'layout');

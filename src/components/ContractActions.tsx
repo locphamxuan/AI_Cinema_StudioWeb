@@ -1,16 +1,29 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useCallback, useRef, useState } from 'react';
 import { PenLine } from 'lucide-react';
 import { actOnContract, type ContractActionState } from '@/app/actions/contracts';
-import { parseCostVnd, type ContractAction } from '@/lib/domain/contract';
-import { formatVnd } from '@/lib/format';
+import { checkSignedPdf, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
+import { formatBytes, formatVnd } from '@/lib/format';
+import { ConfirmDialog } from './ConfirmDialog';
 import { BUTTON, BUTTON_GHOST, ErrorCard, INPUT, SuccessCard } from './ui';
 
 const SUBMIT_LABEL: Record<ContractAction, string> = {
   propose: 'Gửi giá và ký',
   sign: 'Đồng ý giá và ký',
   counter: 'Gửi đề xuất giá khác',
+};
+
+const CONFIRM_TITLE: Record<ContractAction, string> = {
+  propose: 'Gửi giá và ký hợp đồng?',
+  sign: 'Đồng ý giá Admin và ký hợp đồng?',
+  counter: 'Gửi đề xuất giá khác?',
+};
+
+const CONFIRM_NOTE: Record<ContractAction, string> = {
+  propose: 'Sau khi gửi, Studio không sửa được vòng này; Admin sẽ ký đồng ý hoặc đề xuất giá khác.',
+  sign: 'Hợp đồng sẽ đủ hai chữ ký và không thể huỷ trên Studio Web.',
+  counter: 'Một vòng mới được mở với giá này; Admin sẽ ký đồng ý hoặc đề xuất lại.',
 };
 
 function CostField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -21,11 +34,13 @@ function CostField({ value, onChange }: { value: string; onChange: (value: strin
       <input
         name="costVnd"
         inputMode="numeric"
+        autoComplete="off"
         required
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={INPUT}
         placeholder="Ví dụ: 170.000.000"
+        aria-invalid={parsed ? !parsed.ok : undefined}
       />
       {parsed && (
         <span className={`block text-xs ${parsed.ok ? 'text-muted' : 'text-red-600 dark:text-red-300'}`}>
@@ -49,11 +64,45 @@ export function ContractActions({
   const [state, formAction, pending] = useActionState<ContractActionState, FormData>(actOnContract, {});
   const [mode, setMode] = useState<ContractAction>(actions[0]);
   const [cost, setCost] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  /** Set only by the dialog's confirm button: any other submit (Enter in the cost field) goes through review(). */
+  const confirmedRef = useRef(false);
+  const closeConfirm = useCallback(() => setConfirming(false), []);
 
   if (state.done) return <SuccessCard message={state.done} />;
   const needsCost = mode !== 'sign';
+  const parsedCost = parseCostVnd(cost);
+
+  /** Checks the form in the browser first (the 10 MB limit included), then asks for confirmation. */
+  function review() {
+    const form = formRef.current;
+    if (!form?.reportValidity()) return;
+    const pdf = checkSignedPdf(file);
+    if (!pdf.ok) return setProblem(pdf.message);
+    if (needsCost && !parsedCost.ok) return setProblem(parsedCost.message);
+    setProblem(null);
+    setConfirming(true);
+  }
+
+  function confirm() {
+    setConfirming(false);
+    confirmedRef.current = true;
+    formRef.current?.requestSubmit();
+  }
+
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    const confirmed = confirmedRef.current;
+    confirmedRef.current = false;
+    if (confirmed && !pending) return;
+    event.preventDefault();
+    if (!pending) review();
+  }
+
   return (
-    <form action={formAction} className="space-y-4 rounded-2xl border border-border bg-background p-4 sm:p-5">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-background p-4 sm:p-5">
       <input type="hidden" name="contractId" value={contractId} />
       <input type="hidden" name="action" value={mode} />
       {actions.length > 1 && (
@@ -84,6 +133,12 @@ export function ContractActions({
           type="file"
           accept="application/pdf,.pdf"
           required
+          onChange={(event) => {
+            const chosen = event.target.files?.[0] ?? null;
+            setFile(chosen);
+            const check = chosen ? checkSignedPdf(chosen) : null;
+            setProblem(check && !check.ok ? check.message : null);
+          }}
           className={`${INPUT} file:mr-3 file:rounded-full file:border-0 file:bg-accent file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white dark:file:text-slate-900`}
         />
         <span className="block text-xs text-muted">
@@ -94,11 +149,23 @@ export function ContractActions({
         <input type="checkbox" name="agree" required className="mt-0.5 h-4 w-4 accent-[var(--accent)]" />
         <span>Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.</span>
       </label>
-      {state.error && <ErrorCard message={state.error} />}
-      <button type="submit" disabled={pending} className={BUTTON}>
+      {(problem ?? state.error) && <ErrorCard message={problem ?? state.error ?? ''} />}
+      <button type="button" onClick={review} disabled={pending} className={BUTTON}>
         <PenLine className="h-4 w-4" aria-hidden="true" />
         {pending ? 'Đang gửi…' : SUBMIT_LABEL[mode]}
       </button>
+      <ConfirmDialog open={confirming} title={CONFIRM_TITLE[mode]} confirmLabel={SUBMIT_LABEL[mode]} onConfirm={confirm} onCancel={closeConfirm}>
+        <p>
+          Giá sản xuất:{' '}
+          <strong className="tabular-nums">{needsCost ? (parsedCost.ok ? formatVnd(parsedCost.value) : '-') : formatVnd(adminCost)}</strong>
+        </p>
+        {file && (
+          <p className="break-words">
+            Hợp đồng đã ký: <strong>{file.name}</strong> ({formatBytes(file.size)})
+          </p>
+        )}
+        <p className="text-muted">{CONFIRM_NOTE[mode]}</p>
+      </ConfirmDialog>
     </form>
   );
 }

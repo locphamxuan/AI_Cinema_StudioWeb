@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Send } from 'lucide-react';
 import { submitFilm } from '@/lib/api/submit-film';
 import { EXPIRED_LOGIN_PATH } from '@/lib/session/paths';
-import { validateSubmission, type SourceMethod, type SubmissionInput } from '@/lib/domain/submission';
+import { LABEL_TYPES, looksLikeHls, validateSubmission, type SourceMethod, type SubmissionInput } from '@/lib/domain/submission';
+import { formatBytes } from '@/lib/format';
 import type { AiDisclosure, LabelType } from '@/lib/api/types';
 import { AiDisclosureFields } from './AiDisclosureFields';
+import { ConfirmDialog } from './ConfirmDialog';
 import { BUTTON, ErrorCard, INPUT, SuccessCard } from './ui';
 
 const METHODS: { value: SourceMethod; label: string; hint: string }[] = [
@@ -31,15 +33,35 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
   const [errors, setErrors] = useState<string[]>([]);
   const [progress, setProgress] = useState<number | null>(null);
   const [done, setDone] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const closeConfirm = useCallback(() => setConfirming(false), []);
 
   const sending = progress !== null;
 
-  async function onSubmit(event: React.FormEvent) {
+  // Leaving the page while a film uploads would drop the upload: ask the browser to warn first.
+  useEffect(() => {
+    if (!sending) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [sending]);
+  const input: SubmissionInput = { method, file, url, disclosure, proposedLabelType: labelType, note };
+
+  /** Checks everything in the browser, then asks for confirmation before anything is sent. */
+  function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const input: SubmissionInput = { method, file, url, disclosure, proposedLabelType: labelType, note };
+    if (sending) return;
     const problems = validateSubmission(input);
     setErrors(problems);
-    if (problems.length) return;
+    if (!problems.length) setConfirming(true);
+  }
+
+  async function send() {
+    setConfirming(false);
+    // Checked again: nothing may have changed since the confirmation opened, but the film is only sent if valid.
+    const problems = validateSubmission(input);
+    setErrors(problems);
+    if (problems.length || sending) return;
     setProgress(0);
     const result = await submitFilm(episodeId, input, setProgress);
     setProgress(null);
@@ -81,19 +103,30 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
           <input
             type="file"
             aria-label="Tệp phim"
-            accept="video/mp4,video/quicktime,.mp4,.mov"
+            accept="video/mp4,video/quicktime,video/x-m4v,.mp4,.m4v,.mov"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-accent/10 file:px-4 file:py-2 file:font-semibold file:text-accent"
           />
+        ) : null}
+        {method === 'UPLOAD' ? (
+          <p className="text-xs text-muted">
+            {file ? `Đã chọn ${file.name} (${formatBytes(file.size)}).` : 'MP4, M4V hoặc MOV, tối đa 2 GB. Tệp lớn hơn hãy nộp bằng link.'}
+          </p>
         ) : (
           <input
             type="url"
+            inputMode="url"
+            autoComplete="off"
+            spellCheck={false}
             aria-label="Đường dẫn phim"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             className={INPUT}
             placeholder={method === 'HLS_URL' ? 'https://cdn.studio.vn/tap-1/master.m3u8' : 'https://cdn.studio.vn/tap-1.mp4'}
           />
+        )}
+        {method === 'HLS_URL' && url.trim() && !looksLikeHls(url) && (
+          <p className="text-xs text-muted">Link HLS thường kết thúc bằng .m3u8; hãy kiểm tra lại nếu đây không phải playlist.</p>
         )}
       </fieldset>
       <AiDisclosureFields disclosure={disclosure} onDisclosure={setDisclosure} labelType={labelType} onLabelType={setLabelType} />
@@ -119,6 +152,19 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
       <button type="submit" disabled={sending} className={BUTTON}>
         <Send className="h-4 w-4" aria-hidden="true" /> {sending ? 'Đang gửi…' : 'Nộp phim cho Reviewer'}
       </button>
+      <ConfirmDialog open={confirming} title="Nộp phim cho Reviewer?" confirmLabel="Nộp phim" onConfirm={send} onCancel={closeConfirm}>
+        <p className="break-words">
+          {method === 'UPLOAD' && file ? (
+            <>Tệp: <strong>{file.name}</strong> ({formatBytes(file.size)})</>
+          ) : (
+            <>Link: <strong>{url.trim()}</strong></>
+          )}
+        </p>
+        <p>
+          Nhãn AI đề xuất: <strong>{LABEL_TYPES.find((item) => item.value === labelType)?.label ?? '-'}</strong>
+        </p>
+        <p className="text-muted">Bản nộp mới sẽ thay bản trước để Reviewer duyệt; tập chuyển sang trạng thái đang xử lý video.</p>
+      </ConfirmDialog>
     </form>
   );
 }

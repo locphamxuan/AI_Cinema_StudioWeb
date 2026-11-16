@@ -19,6 +19,8 @@ test('delivers the film of an episode by link with the AI Disclosure', async ({ 
   await page.getByLabel(/không dùng tư liệu có bản quyền/).check();
   await page.getByLabel('Loại nhãn AI đề xuất').selectOption('AI_GENERATED');
   await page.getByRole('button', { name: /Nộp phim cho Reviewer/ }).click();
+  await expect(page.getByRole('dialog')).toContainText('https://cdn.studio.vn/pho-dem/tap-1.mp4');
+  await page.getByRole('dialog').getByRole('button', { name: 'Nộp phim' }).click();
   await expect(page.getByRole('status')).toContainText('Đã nộp phim cho Reviewer');
 
   await page.getByRole('link', { name: 'Về trang dự án' }).click();
@@ -33,10 +35,24 @@ test('refuses an incomplete delivery before sending it', async ({ page }) => {
   await expect(page.getByRole('main').getByRole('alert')).toHaveCount(5);
 });
 
+test('uploads an MP4 file through the forwarding route', async ({ page }) => {
+  await episodeCard(page, 'Đèn đường').getByRole('link', { name: /Nộp phim/ }).click();
+  await page.getByLabel('Tệp phim').setInputFiles({ name: 'tap-1.mp4', mimeType: 'video/mp4', buffer: Buffer.from('fake-mp4') });
+  await expect(page.getByText('Đã chọn tap-1.mp4 (8 B).')).toBeVisible();
+  await page.getByLabel('Hình ảnh động / video').check();
+  await page.getByLabel(/không dùng hình ảnh, giọng nói/).check();
+  await page.getByLabel(/không dùng tư liệu có bản quyền/).check();
+  await page.getByLabel('Loại nhãn AI đề xuất').selectOption('AI_ASSISTED');
+  await page.getByRole('button', { name: /Nộp phim cho Reviewer/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Nộp phim' }).click();
+  await expect(page.getByRole('status')).toContainText('Đã nộp phim cho Reviewer');
+});
+
 test('processes a failed delivery again', async ({ page }) => {
   const card = episodeCard(page, 'Mưa phố');
   await expect(card).toContainText('Lỗi xử lý: Không tải được tệp từ đường dẫn');
   await card.getByRole('button', { name: 'Xử lý lại' }).click();
+  await page.getByRole('dialog', { name: 'Xử lý lại phiên bản 1?' }).getByRole('button', { name: 'Xử lý lại' }).click();
   await expect(card).toContainText('Đang chờ xử lý');
   await expect(card.getByRole('button', { name: 'Xử lý lại' })).toHaveCount(0);
   await expect(card).not.toContainText('Lỗi xử lý:');
