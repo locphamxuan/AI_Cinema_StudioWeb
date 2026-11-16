@@ -50,7 +50,7 @@ export function EpisodeCard({ projectId, episode, contractSigned }: { projectId:
             {formatDateTime(delivery.createdAt)}
           </p>
           {delivery.failureReason && <p className="mt-1 text-red-600 dark:text-red-300">Lỗi xử lý: {delivery.failureReason}</p>}
-          {canRetry(delivery) && <RetryDeliveryButton mediaAssetId={delivery.id} />}
+          {canRetry(delivery) && <RetryDeliveryButton mediaAssetId={delivery.id} version={delivery.version} />}
         </div>
       ) : (
         <p className="text-sm text-muted">Chưa có bản nộp nào.</p>

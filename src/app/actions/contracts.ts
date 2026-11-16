@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { unstable_rethrow } from 'next/navigation';
 import { describeError } from '@/lib/api/http';
 import { checkSignedPdf, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
 import { withPortal } from '@/lib/session/server';
@@ -39,6 +40,7 @@ export async function actOnContract(_previous: ContractActionState, form: FormDa
       return api.signContract(contractId, pdf.file);
     });
   } catch (error) {
+    unstable_rethrow(error);
     return { error: describeError(error) };
   }
   revalidatePath('/', 'layout');

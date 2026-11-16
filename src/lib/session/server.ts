@@ -69,9 +69,23 @@ export async function mutationToken(): Promise<string | null> {
   }
 }
 
-/** Runs a mutation with the studio's API; a missing session throws a 401 ApiError the form shows. */
+/** Ends the session and sends the studio to the login page; only Server Actions may call this (it writes cookies). */
+async function expire(): Promise<never> {
+  await clearSession();
+  redirect(EXPIRED_LOGIN_PATH);
+}
+
+/**
+ * Runs a mutation (Server Action) with the studio's API. No session, or a token the API refuses, ends the session
+ * and redirects to the login page; callers that catch errors must let that redirect through (`unstable_rethrow`).
+ */
 export async function withPortal<T>(run: (api: PortalApi) => Promise<T>): Promise<T> {
   const token = await mutationToken();
-  if (!token) throw new ApiError(401, 'UNAUTHORIZED', 'Vui lòng đăng nhập lại.');
-  return run(portalApi(getConfig().apiUrl, token));
+  if (!token) return expire();
+  try {
+    return await run(portalApi(getConfig().apiUrl, token));
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return expire();
+    throw error;
+  }
 }

@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Contract, PortalEpisode } from '@/lib/api/types';
 
-vi.mock('@/app/actions/contracts', () => ({ actOnContract: vi.fn(async () => ({})) }));
+const actOnContract = vi.fn(async () => ({}));
+vi.mock('@/app/actions/contracts', () => ({ actOnContract: (...args: unknown[]) => actOnContract(...(args as [])) }));
 const retryDelivery = vi.fn();
 vi.mock('@/app/actions/deliveries', () => ({ retryDelivery: (...args: unknown[]) => retryDelivery(...args) }));
 
@@ -61,6 +62,55 @@ describe('ContractRound', () => {
     expect(screen.getByText('Giá phải là bội số của 1.000 VND.')).toBeInTheDocument();
   });
 
+  it('checks the signed PDF in the browser before asking to confirm', async () => {
+    render(<ContractRound contract={contract({})} />);
+    const input = screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/);
+    await userEvent.upload(input, new File(['x'], 'scan.png', { type: 'image/png' }), { applyAccept: false });
+    expect(screen.getByRole('alert')).toHaveTextContent('Hợp đồng đã ký phải là file PDF.');
+    const big = new File(['x'], 'ky.pdf', { type: 'application/pdf' });
+    Object.defineProperty(big, 'size', { value: 11 * 1024 * 1024 });
+    await userEvent.upload(input, big);
+    expect(screen.getByRole('alert')).toHaveTextContent('File PDF tối đa 10 MB.');
+  });
+
+  it('shows the cost and the signed PDF in a confirmation before signing', async () => {
+    // jsdom does not see files set by userEvent.upload as filling a required input; browsers do.
+    vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
+    render(<ContractRound contract={contract({})} />);
+    await userEvent.upload(
+      screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/),
+      new File(['%PDF-1.4'], 'ky.pdf', { type: 'application/pdf' }),
+    );
+    await userEvent.click(screen.getByLabelText('Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.'));
+    await userEvent.click(screen.getByRole('button', { name: 'Đồng ý giá và ký' }));
+    const dialog = screen.getByRole('dialog', { name: 'Đồng ý giá Admin và ký hợp đồng?' });
+    expect(dialog).toHaveTextContent('150.000.000 VND');
+    expect(dialog).toHaveTextContent('ky.pdf');
+  });
+
+  it('asks for confirmation when Enter is pressed in the cost field, and sends only once confirmed', async () => {
+    vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
+    actOnContract.mockClear();
+    render(<ContractRound contract={contract({ status: 'SENT', costVnd: null, proposedBy: null, adminSignedAt: null })} />);
+    await userEvent.upload(
+      screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/),
+      new File(['%PDF-1.4'], 'ky.pdf', { type: 'application/pdf' }),
+    );
+    await userEvent.click(screen.getByLabelText('Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.'));
+    const cost = screen.getByPlaceholderText('Ví dụ: 170.000.000');
+    await userEvent.type(cost, '120000000');
+    // Enter in the only text field submits the form implicitly in browsers; jsdom needs the submit event fired.
+    fireEvent.submit(cost.closest('form')!);
+    fireEvent.submit(cost.closest('form')!);
+    const dialog = screen.getByRole('dialog', { name: 'Gửi giá và ký hợp đồng?' });
+    expect(dialog).toHaveTextContent('120.000.000 VND');
+    expect(actOnContract).not.toHaveBeenCalled();
+    // jsdom's requestSubmit() validates against its own (empty) file list; the browser sees the uploaded file.
+    (screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/) as HTMLInputElement).required = false;
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Gửi giá và ký' }));
+    await waitFor(() => expect(actOnContract).toHaveBeenCalledTimes(1));
+  });
+
   it('offers nothing on a round waiting for the Admin', () => {
     render(<ContractRound contract={contract({ status: 'STUDIO_SIGNED', proposedBy: 'STUDIO', adminSignedAt: null, studioSignedAt: '2026-11-07T03:00:00Z' })} />);
     expect(screen.getByText('Studio đã ký – chờ Admin')).toBeInTheDocument();
@@ -83,6 +133,7 @@ describe('EpisodeCard', () => {
 });
 
 describe('retrying a failed delivery', () => {
+  beforeEach(() => retryDelivery.mockReset());
   const failed = (over: Partial<PortalEpisode> = {}) =>
     episode({
       status: 'PROCESSING',
@@ -102,6 +153,10 @@ describe('retrying a failed delivery', () => {
     retryDelivery.mockResolvedValueOnce({ error: 'Không thể thực hiện ở trạng thái hiện tại: newer delivery' });
     render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
     await userEvent.click(screen.getByRole('button', { name: 'Xử lý lại' }));
+    const dialog = screen.getByRole('dialog', { name: 'Xử lý lại phiên bản 2?' });
+    expect(retryDelivery).not.toHaveBeenCalled();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Xử lý lại' }));
+    await waitFor(() => expect(retryDelivery).toHaveBeenCalled());
     expect((retryDelivery.mock.calls[0][1] as FormData).get('mediaAssetId')).toBe('m9');
     expect(await screen.findByRole('alert')).toHaveTextContent('newer delivery');
   });
@@ -110,6 +165,22 @@ describe('retrying a failed delivery', () => {
     retryDelivery.mockResolvedValueOnce({ done: 'Đã gửi bản phim đi xử lý lại.' });
     render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
     await userEvent.click(screen.getByRole('button', { name: 'Xử lý lại' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Xử lý lại' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Đã gửi bản phim đi xử lý lại.');
+  });
+
+  it('sends nothing when the studio goes back from the confirmation', async () => {
+    render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
+    const opener = screen.getByRole('button', { name: 'Xử lý lại' });
+    await userEvent.click(opener);
+    await userEvent.click(screen.getByRole('button', { name: 'Quay lại' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+    await userEvent.click(opener);
+    // Escape fires the dialog's `cancel` event in browsers (jsdom does not map the key itself).
+    const dialog = screen.getByRole('dialog');
+    fireEvent(dialog, new Event('cancel', { cancelable: true }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(retryDelivery).not.toHaveBeenCalled();
   });
 });

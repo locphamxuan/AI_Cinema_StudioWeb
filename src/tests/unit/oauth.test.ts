@@ -156,6 +156,18 @@ describe('GET /api/contracts/:id/documents/:side', () => {
   it('refuses a bad side or id, and a visitor without a session', async () => {
     expect((await call('OTHER')).status).toBe(400);
     expect((await call('FINAL', 'nope')).status).toBe(400);
-    expect((await call('FINAL')).status).toBe(401);
+    const anonymous = await call('FINAL');
+    expect(anonymous.status).toBe(307);
+    expect(anonymous.headers.get('location')).toBe('http://localhost:3100/login?expired=1');
+  });
+
+  it('sends the studio to the login page when the API refuses the token', async () => {
+    jar.set('sw_access', 'acc');
+    jar.set('sw_expires', String(Date.now() + 600_000));
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { message: 'Invalid token' } }, 401)));
+    const response = await call('ADMIN');
+    expect(response.headers.get('location')).toBe('http://localhost:3100/login?expired=1');
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { message: 'missing' } }, 404)));
+    expect((await call('ADMIN')).status).toBe(404);
   });
 });

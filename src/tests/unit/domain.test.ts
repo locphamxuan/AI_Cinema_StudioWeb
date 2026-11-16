@@ -8,7 +8,7 @@ import {
   parseCostVnd,
 } from '@/lib/domain/contract';
 import { canRetry, canSubmit } from '@/lib/domain/episode';
-import { daysUntil, formatDate, formatVnd } from '@/lib/format';
+import { daysUntil, formatBytes, formatDate, formatVnd } from '@/lib/format';
 import { getConfig } from '@/lib/config';
 
 const contract = (over: Partial<Contract>): Contract => ({
@@ -113,6 +113,13 @@ describe('format', () => {
   it('formats VND with vi-VN grouping', () => {
     expect(formatVnd(170_000_000)).toBe('170.000.000 VND');
     expect(formatVnd(null)).toBe('Chưa có giá');
+  });
+
+  it('formats file sizes', () => {
+    expect(formatBytes(512)).toBe('512 B');
+    expect(formatBytes(1536)).toBe('1,5 KB');
+    expect(formatBytes(10 * 1024 * 1024)).toBe('10 MB');
+    expect(formatBytes(2048 * 1024 * 1024)).toBe('2 GB');
   });
 
   it('keeps the day of an API date', () => {

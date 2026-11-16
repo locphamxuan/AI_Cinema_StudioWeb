@@ -54,13 +54,13 @@ export default async function LoginPage({
         </a>
         {passwordLogin && (
           <div className="space-y-4 border-t border-border pt-5">
-            <p className="text-center text-[11px] text-muted">Hoặc đăng nhập trực tiếp (môi trường phát triển)</p>
+            <p className="text-center text-[11px] text-muted">Hoặc đăng nhập bằng email (chỉ ở môi trường phát triển)</p>
             <LoginForm notice={error ? undefined : notice} />
           </div>
         )}
       </div>
       <p className="mt-6 text-center text-[11px] text-slate-500 dark:text-slate-400">
-        Cổng đối tác sản xuất bên ngoài · Tuân thủ quy trình bàn giao MF-1 &amp; Điều 44
+        Chỉ dành cho tài khoản Studio đối tác do AI Cinema cấp.
       </p>
     </main>
   );

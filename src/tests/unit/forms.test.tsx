@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const router = { push: vi.fn(), refresh: vi.fn() };
@@ -76,6 +76,11 @@ describe('SubmitFilmForm', () => {
     await userEvent.type(screen.getByLabelText('Đường dẫn phim'), 'https://cdn.studio.vn/tap-1/master.m3u8');
     await fillDisclosure();
     await userEvent.click(screen.getByRole('button', { name: /Nộp phim cho Reviewer/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Nộp phim cho Reviewer?' });
+    expect(dialog).toHaveTextContent('https://cdn.studio.vn/tap-1/master.m3u8');
+    expect(dialog).toHaveTextContent('Nội dung do AI tạo ra');
+    expect(submitFilm).not.toHaveBeenCalled();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Nộp phim' }));
     expect(submitFilm).toHaveBeenCalledWith(
       'e1',
       expect.objectContaining({
@@ -99,8 +104,22 @@ describe('SubmitFilmForm', () => {
     await userEvent.type(screen.getByLabelText('Đường dẫn phim'), 'https://cdn.studio.vn/tap-1.mp4');
     await fillDisclosure();
     await userEvent.click(screen.getByRole('button', { name: /Nộp phim cho Reviewer/ }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Nộp phim' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Phiên đăng nhập đã hết hạn');
     expect(router.push).toHaveBeenCalledWith('/login?expired=1');
+  });
+});
+
+describe('SubmitFilmForm upload', () => {
+  it('shows the chosen file and refuses one that is not MP4/MOV', async () => {
+    render(<SubmitFilmForm projectId="p1" episodeId="e1" />);
+    expect(screen.getByText(/tối đa 2 GB/)).toBeInTheDocument();
+    await userEvent.upload(screen.getByLabelText('Tệp phim'), new File(['x'], 'tap.webm', { type: 'video/webm' }), { applyAccept: false });
+    expect(screen.getByText('Đã chọn tap.webm (1 B).')).toBeInTheDocument();
+    await fillDisclosure();
+    await userEvent.click(screen.getByRole('button', { name: /Nộp phim cho Reviewer/ }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Tệp phim phải là MP4 hoặc MOV.');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
 

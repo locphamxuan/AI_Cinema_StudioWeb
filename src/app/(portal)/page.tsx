@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { ArrowRight, ArrowUpRight, Bell, Building2, CheckCheck, Clock, FileSignature, Film } from 'lucide-react';
+import { ArrowRight, Bell, Building2, CheckCheck, Clock, FileSignature, Film } from 'lucide-react';
 import { markAllNotificationsRead } from '@/app/actions/notifications';
 import { Badge, CARD, EmptyNote, Facts, Guarded } from '@/components/ui';
 import { needsStudio } from '@/lib/domain/contract';
 import { PROJECT_STATUS_LABEL } from '@/lib/domain/episode';
 import { formatDateTime, formatVnd } from '@/lib/format';
-import { pagePortal } from '@/lib/session/server';
+import { loadContracts, loadNotifications, loadProjects, loadStudio } from '@/lib/session/portal-data';
 import type { PortalNotification } from '@/lib/api/types';
 
 export const metadata = { title: 'Tổng quan - Studio Web' };
@@ -37,12 +37,11 @@ function NotificationItem({ item }: { item: PortalNotification }) {
 }
 
 async function Overview() {
-  const api = await pagePortal();
   const [studio, contracts, projects, notifications] = await Promise.all([
-    api.me(),
-    api.contracts(),
-    api.projects(),
-    api.notifications(20),
+    loadStudio(),
+    loadContracts(),
+    loadProjects(),
+    loadNotifications(),
   ]);
   const waiting = contracts.filter(needsStudio).length;
   const producingList = projects.filter((project) => project.status === 'IN_PRODUCTION');
@@ -52,26 +51,20 @@ async function Overview() {
 
   return (
     <>
-      <section className={`${CARD} flex flex-col justify-between gap-4 p-6 sm:flex-row sm:items-center`}>
-        <div className="space-y-1">
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Xin chào, {studio.name}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Theo dõi hợp đồng sản xuất, tiến độ phân cảnh và yêu cầu kiểm duyệt từ AI Cinema.
-          </p>
-        </div>
-        <Link
-          href={heroProject ? `/projects/${heroProject.id}` : '/projects'}
-          className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-[#121212] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-black dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 sm:self-center"
-        >
-          Bàn Giao Video Master <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
+      <section className={`${CARD} space-y-1 p-6`}>
+        <h1 className="text-2xl font-extrabold tracking-tight text-balance text-slate-900 dark:text-white">
+          Xin chào, {studio.name}
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {waiting
+            ? `Có ${waiting} vòng hợp đồng đang chờ Studio ký. Mở Hợp đồng để xử lý.`
+            : 'Theo dõi hợp đồng, hạn giao từng tập và yêu cầu sửa của Reviewer AI Cinema.'}
+        </p>
       </section>
 
       <div className="grid gap-5 md:grid-cols-3">
         <section id="studio-profile" className={`${CARD} space-y-3.5 p-6`}>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
             <Building2 className="h-4 w-4 text-slate-900 dark:text-white" aria-hidden="true" />
             <h2>Thông tin pháp nhân</h2>
           </div>
@@ -90,7 +83,7 @@ async function Overview() {
           className={`${CARD} group flex flex-col justify-between space-y-3 p-6 transition-all hover:-translate-y-0.5 hover:shadow-md`}
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
               Hợp đồng chờ Studio xử lý
             </span>
             <span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-800 transition-colors group-hover:bg-[#121212] group-hover:text-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:group-hover:bg-white dark:group-hover:text-slate-900">
@@ -108,7 +101,7 @@ async function Overview() {
           className={`${CARD} group flex flex-col justify-between space-y-3 p-6 transition-all hover:-translate-y-0.5 hover:shadow-md`}
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
               Dự án đang sản xuất
             </span>
             <span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-800 transition-colors group-hover:bg-[#121212] group-hover:text-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:group-hover:bg-white dark:group-hover:text-slate-900">
@@ -144,15 +137,15 @@ async function Overview() {
             href={`/projects/${heroProject.id}`}
             className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-xs font-semibold text-slate-900 shadow-xs transition-all hover:bg-slate-100 dark:bg-white dark:text-slate-900 sm:self-center sm:text-sm"
           >
-            Tải lên Video Master <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            Mở dự án <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </section>
       )}
 
-      <section id="notifications" className={`${CARD} p-6`}>
+      <section id="notifications" className={`${CARD} scroll-mt-6 p-6`}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-white/[0.06]">
           <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
-            <Bell className="h-4 w-4" aria-hidden="true" /> Nhật ký cập nhật &amp; Thông báo
+            <Bell className="h-4 w-4" aria-hidden="true" /> Thông báo
             {unread > 0 && <Badge tone="action">{unread} chưa đọc</Badge>}
           </h2>
           {unread > 0 && (
@@ -161,7 +154,7 @@ async function Overview() {
                 type="submit"
                 className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-900 hover:underline dark:text-slate-400 dark:hover:text-white"
               >
-                <CheckCheck className="h-4 w-4" aria-hidden="true" /> Đánh dấu đã đọc tất cả
+                <CheckCheck className="h-4 w-4" aria-hidden="true" /> Đánh dấu tất cả đã đọc
               </button>
             </form>
           )}
@@ -173,7 +166,7 @@ async function Overview() {
             ))}
           </ul>
         ) : (
-          <EmptyNote>Chưa có thông báo nào.</EmptyNote>
+          <EmptyNote>Chưa có thông báo. Khi Admin hoặc Reviewer cập nhật hợp đồng hay bản phim, thông báo sẽ hiện ở đây.</EmptyNote>
         )}
       </section>
     </>
