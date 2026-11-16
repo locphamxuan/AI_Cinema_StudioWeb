@@ -26,15 +26,17 @@ export interface SubmissionInput {
   note: string;
 }
 
-const VIDEO_FILE = /\.(mp4|mov)$/i;
-const VIDEO_TYPES = ['', 'video/mp4', 'video/quicktime'];
+/** The API's MP4/MOV kinds (BE `detectKind`: .mp4, .m4v, .mov); it checks the content itself by magic bytes. */
+const VIDEO_FILE = /\.(mp4|m4v|mov)$/i;
+/** Browsers report these films as video/*, application/mp4 or nothing at all; the extension decides. */
+const videoType = (type: string) => !type || type.startsWith('video/') || type === 'application/mp4';
 const NOTE_MAX = 2000;
 /** The API's limit on a link (SubmitMediaLinkRequestDto.sourceUrl). */
 const URL_MAX = 1000;
 /** The API's default upload limit (MEDIA_MAX_UPLOAD_MB = 2048). */
 export const FILM_MAX_BYTES = 2048 * 1024 * 1024;
 
-function linkProblem(method: SourceMethod, raw: string): string | null {
+function linkProblem(raw: string): string | null {
   const value = raw.trim();
   if (!value) return 'Vui lòng nhập đường dẫn phim.';
   let url: URL;
@@ -45,22 +47,30 @@ function linkProblem(method: SourceMethod, raw: string): string | null {
   }
   if (!['http:', 'https:'].includes(url.protocol)) return 'Đường dẫn phim phải là địa chỉ http(s) hợp lệ.';
   if (value.length > URL_MAX) return `Đường dẫn phim tối đa ${URL_MAX} ký tự.`;
-  if (method === 'HLS_URL' && !/\.m3u8$/i.test(url.pathname)) return 'Link HLS phải trỏ tới playlist .m3u8.';
   return null;
+}
+
+/** A soft hint only: the API accepts any http(s) link and probes the playlist itself. */
+export function looksLikeHls(raw: string): boolean {
+  try {
+    return /\.m3u8$/i.test(new URL(raw.trim()).pathname);
+  } catch {
+    return false;
+  }
 }
 
 function fileProblem(file: File | null): string | null {
   if (!file) return 'Vui lòng chọn tệp phim.';
-  if (!VIDEO_FILE.test(file.name) || !VIDEO_TYPES.includes(file.type)) return 'Tệp phim phải là MP4 hoặc MOV.';
+  if (!VIDEO_FILE.test(file.name) || !videoType(file.type)) return 'Tệp phim phải là MP4 hoặc MOV.';
   if (file.size === 0) return 'Tệp phim đang rỗng.';
   if (file.size > FILM_MAX_BYTES) return 'Tệp phim tối đa 2 GB; tệp lớn hơn hãy nộp bằng link.';
   return null;
 }
 
-/** The same rules the API enforces (BR-41 disclosure, MP4/MOV file up to 2 GB, http(s) link), checked before sending. */
+/** The same rules the API enforces (BR-41 disclosure, MP4/M4V/MOV file up to 2 GB, http(s) link), checked before sending. */
 export function validateSubmission(input: SubmissionInput): string[] {
   const errors: string[] = [];
-  const source = input.method === 'UPLOAD' ? fileProblem(input.file) : linkProblem(input.method, input.url);
+  const source = input.method === 'UPLOAD' ? fileProblem(input.file) : linkProblem(input.url);
   if (source) errors.push(source);
   if (!input.disclosure.aiGeneratedParts.length) errors.push('Chọn ít nhất một phần có dùng AI.');
   if (!input.disclosure.noRealPersonLikeness) errors.push('Studio phải cam kết không dùng hình ảnh người thật gây hiểu lầm.');

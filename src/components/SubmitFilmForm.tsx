@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Send } from 'lucide-react';
 import { submitFilm } from '@/lib/api/submit-film';
 import { EXPIRED_LOGIN_PATH } from '@/lib/session/paths';
-import { LABEL_TYPES, validateSubmission, type SourceMethod, type SubmissionInput } from '@/lib/domain/submission';
+import { LABEL_TYPES, looksLikeHls, validateSubmission, type SourceMethod, type SubmissionInput } from '@/lib/domain/submission';
 import { formatBytes } from '@/lib/format';
 import type { AiDisclosure, LabelType } from '@/lib/api/types';
 import { AiDisclosureFields } from './AiDisclosureFields';
@@ -50,6 +50,7 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
   /** Checks everything in the browser, then asks for confirmation before anything is sent. */
   function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (sending) return;
     const problems = validateSubmission(input);
     setErrors(problems);
     if (!problems.length) setConfirming(true);
@@ -57,6 +58,10 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
 
   async function send() {
     setConfirming(false);
+    // Checked again: nothing may have changed since the confirmation opened, but the film is only sent if valid.
+    const problems = validateSubmission(input);
+    setErrors(problems);
+    if (problems.length || sending) return;
     setProgress(0);
     const result = await submitFilm(episodeId, input, setProgress);
     setProgress(null);
@@ -98,14 +103,14 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
           <input
             type="file"
             aria-label="Tệp phim"
-            accept="video/mp4,video/quicktime,.mp4,.mov"
+            accept="video/mp4,video/quicktime,video/x-m4v,.mp4,.m4v,.mov"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-accent/10 file:px-4 file:py-2 file:font-semibold file:text-accent"
           />
         ) : null}
         {method === 'UPLOAD' ? (
           <p className="text-xs text-muted">
-            {file ? `Đã chọn ${file.name} (${formatBytes(file.size)}).` : 'MP4 hoặc MOV, tối đa 2 GB. Tệp lớn hơn hãy nộp bằng link.'}
+            {file ? `Đã chọn ${file.name} (${formatBytes(file.size)}).` : 'MP4, M4V hoặc MOV, tối đa 2 GB. Tệp lớn hơn hãy nộp bằng link.'}
           </p>
         ) : (
           <input
@@ -119,6 +124,9 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
             className={INPUT}
             placeholder={method === 'HLS_URL' ? 'https://cdn.studio.vn/tap-1/master.m3u8' : 'https://cdn.studio.vn/tap-1.mp4'}
           />
+        )}
+        {method === 'HLS_URL' && url.trim() && !looksLikeHls(url) && (
+          <p className="text-xs text-muted">Link HLS thường kết thúc bằng .m3u8; hãy kiểm tra lại nếu đây không phải playlist.</p>
         )}
       </fieldset>
       <AiDisclosureFields disclosure={disclosure} onDisclosure={setDisclosure} labelType={labelType} onLabelType={setLabelType} />
