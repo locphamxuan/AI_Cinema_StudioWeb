@@ -68,6 +68,8 @@ export function ContractActions({
   const [problem, setProblem] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  /** Set only by the dialog's confirm button: any other submit (Enter in the cost field) goes through review(). */
+  const confirmedRef = useRef(false);
   const closeConfirm = useCallback(() => setConfirming(false), []);
 
   if (state.done) return <SuccessCard message={state.done} />;
@@ -87,11 +89,20 @@ export function ContractActions({
 
   function confirm() {
     setConfirming(false);
+    confirmedRef.current = true;
     formRef.current?.requestSubmit();
   }
 
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    const confirmed = confirmedRef.current;
+    confirmedRef.current = false;
+    if (confirmed && !pending) return;
+    event.preventDefault();
+    if (!pending) review();
+  }
+
   return (
-    <form ref={formRef} action={formAction} className="space-y-4 rounded-2xl border border-border bg-background p-4 sm:p-5">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-background p-4 sm:p-5">
       <input type="hidden" name="contractId" value={contractId} />
       <input type="hidden" name="action" value={mode} />
       {actions.length > 1 && (

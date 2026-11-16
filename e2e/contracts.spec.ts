@@ -24,9 +24,19 @@ test.beforeEach(async ({ loggedIn: page }) => {
 test('going back from the confirmation signs nothing', async ({ page }) => {
   const card = project(page, 'Hành trình ánh sáng');
   await agree(card);
-  await card.getByRole('button', { name: 'Đồng ý giá và ký' }).click();
+  const opener = card.getByRole('button', { name: 'Đồng ý giá và ký' });
+  await opener.click();
   await page.getByRole('dialog').getByRole('button', { name: 'Quay lại' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(opener).toBeFocused();
+  await opener.click();
+  // The page behind the modal is inert: Tab stays in the dialog, Escape closes it.
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('dialog').locator(':focus')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(opener).toBeFocused();
   await expect(card.getByText('Admin đề xuất giá – chờ Studio')).toBeVisible();
 });
 
@@ -68,9 +78,11 @@ test('fills in the cost of a template just sent to the studio', async ({ page })
   const card = project(page, 'Mùa hạ cuối');
   await card.getByPlaceholder('Ví dụ: 170.000.000').fill('1500');
   await expect(card.getByText('Giá phải là bội số của 1.000 VND.')).toBeVisible();
-  await card.getByPlaceholder('Ví dụ: 170.000.000').fill('120000000');
   await agree(card);
-  await card.getByRole('button', { name: 'Gửi giá và ký' }).click();
+  await card.getByPlaceholder('Ví dụ: 170.000.000').fill('120000000');
+  // Enter in the cost field must open the confirmation, not sign straight away.
+  await card.getByPlaceholder('Ví dụ: 170.000.000').press('Enter');
+  await expect(page.getByRole('dialog')).toContainText('120.000.000 VND');
   await confirmSign(page, 'Gửi giá và ký');
   await expect(card.getByText('Studio đã ký – chờ Admin')).toBeVisible();
 });

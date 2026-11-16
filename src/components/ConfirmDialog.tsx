@@ -5,7 +5,9 @@ import { BUTTON, BUTTON_GHOST } from './ui';
 
 /**
  * Asks the studio to confirm a move that cannot be taken back (signing, delivering, processing again), showing what
- * will be sent. Escape or "Quay lại" closes it; focus starts on the confirm button.
+ * will be sent. A native modal <dialog>: the page behind is inert and focus stays inside until it closes, so nothing
+ * can change between the check and the send. Escape, a click outside or "Quay lại" cancels; focus then returns to
+ * the button that opened it.
  */
 export function ConfirmDialog({
   open,
@@ -23,41 +25,53 @@ export function ConfirmDialog({
   children: React.ReactNode;
 }) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (!open) return;
-    confirmRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCancel();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, onCancel]);
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open && !dialog.open) {
+      openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      dialog.showModal();
+      confirmRef.current?.focus();
+    } else if (!open && dialog.open) {
+      dialog.close();
+      openerRef.current?.focus();
+    }
+  }, [open]);
 
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-slate-950/50 p-4" onClick={onCancel}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="w-full max-w-md space-y-4 rounded-3xl border border-border bg-card p-6 text-foreground shadow-lg"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h2 id={titleId} className="text-lg font-bold tracking-tight text-balance">
-          {title}
-        </h2>
-        <div className="space-y-2 text-sm">{children}</div>
-        <div className="flex flex-wrap justify-end gap-2 pt-2">
-          <button type="button" onClick={onCancel} className={BUTTON_GHOST}>
-            Quay lại
-          </button>
-          <button ref={confirmRef} type="button" onClick={onConfirm} className={BUTTON}>
-            {confirmLabel}
-          </button>
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      onCancel={(event) => {
+        // Escape: let React state close it, so `open` stays the single source of truth.
+        event.preventDefault();
+        onCancel();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+      className="m-auto w-[calc(100%-2rem)] max-w-md overscroll-contain rounded-3xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-slate-950/50"
+    >
+      {open && (
+        <div className="space-y-4 p-6">
+          <h2 id={titleId} className="text-lg font-bold tracking-tight text-balance">
+            {title}
+          </h2>
+          <div className="space-y-2 text-sm">{children}</div>
+          <div className="flex flex-wrap justify-end gap-2 pt-2">
+            <button type="button" onClick={onCancel} className={BUTTON_GHOST}>
+              Quay lại
+            </button>
+            <button ref={confirmRef} type="button" onClick={onConfirm} className={BUTTON}>
+              {confirmLabel}
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </dialog>
   );
 }
