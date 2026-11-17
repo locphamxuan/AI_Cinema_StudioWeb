@@ -1,0 +1,29 @@
+name: ai-cinema-studio-web
+
+services:
+  studio-web:
+    image: ${STUDIO_WEB_IMAGE:-manhhiep2003/ai-cinema-studio-web:latest}
+    container_name: ai-cinema-studio-web
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      HOSTNAME: 0.0.0.0
+
+      AI_CINEMA_API_URL: http://api:3001/api
+      AI_CINEMA_WEB_URL: https://ai-cinema-web.duckdns.org
+      STUDIO_WEB_URL: https://ai-cinema-studio.duckdns.org
+
+      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID:-studio-web}
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      STUDIO_PASSWORD_LOGIN: ${STUDIO_PASSWORD_LOGIN:-}
+
+    networks:
+      - ai-cinema-network
+
+networks:
+  ai-cinema-network:
+    external: true
+    name: ai-cinema_ai-cinema-network

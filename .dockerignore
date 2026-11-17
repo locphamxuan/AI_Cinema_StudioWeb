@@ -1,0 +1,56 @@
+# Build context for the Next.js image (Dockerfile). Keep only what `next build` reads.
+node_modules
+.next
+out
+build
+coverage
+
+# Secrets and machine-specific env. Compose still reads .env on the host for variable substitution;
+# the container receives its settings through `environment` (see docker-compose.yml).
+.env
+.env.*
+!.env.example
+
+# Tests, their configs and reports: the image only builds the app.
+e2e
+src/tests
+vitest.config.mts
+playwright.config.ts
+test-results
+playwright-report
+blob-report
+
+# Logs and local data.
+*.log
+npm-debug.log*
+.data
+
+# Repo metadata, docs and agent tooling.
+.git
+.github
+.claude
+.claude-tools
+.claude-mem
+.agents
+.agent
+.codegraph
+.vercel
+TESTING.md
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+PROJECT_OVERVIEW.md
+PROJECT_CONTEXT.md
+PROGRESS.md
+README.md
+
+# Editor and OS noise.
+.vscode
+.idea
+.DS_Store
+*.pem
+
+# Docker files are read by the daemon, not copied into the image.
+Dockerfile*
+docker-compose*.yml
+.dockerignore

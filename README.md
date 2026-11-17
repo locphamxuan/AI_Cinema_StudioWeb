@@ -32,6 +32,28 @@ npm run dev                    # http://localhost:3100
 Demo account created by the backend seed: `studio@aicinema.com` / `Aicinema@123` (studio "Lumen Studio"). The seed creates no
 contract: the Admin has to approve the Final Script of a project assigned to this studio before one appears here.
 
+### Docker
+
+`Dockerfile` builds the production image (Next.js standalone output, port 3100) and `docker-compose.yml` runs it:
+
+```bash
+docker compose up -d --build    # http://localhost:3100
+docker compose logs -f studio-web
+docker compose down
+```
+
+Compose reads `.env` for the settings below. They are runtime values, so after editing `.env` a plain `docker compose up -d`
+is enough — only a new image needs `--build`. Two addresses differ inside a container:
+
+- `DOCKER_API_URL` is the API as seen from the container; the default `http://host.docker.internal:3001/api` reaches an API
+  started on the host (`docker compose up -d --build` in `AI_Cinema_BE`, or `npm run start:local`). When the API is a
+  container on a shared network, set e.g. `DOCKER_API_URL=http://api:3001/api` and attach this service to that network
+  (see the commented block in `docker-compose.yml`).
+- `STUDIO_WEB_URL` is what the browser uses, not what the container dials: `STUDIO_WEB_URL/api/auth/callback` must be
+  registered in the API's `OAUTH_STUDIO_WEB_REDIRECT_URIS`.
+
+Set `COOKIE_SECURE=false` when the site is served over plain http from another machine than localhost.
+
 ### Environment
 
 | Variable | Default | Meaning |
