@@ -1,22 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getConfig } from '@/lib/config';
+import { fail, sameOrigin, UUID } from '@/lib/session/route-forward';
 import { mutationToken } from '@/lib/session/server';
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const fail = (status: number, message: string) =>
-  NextResponse.json({ error: { code: status === 401 ? 'UNAUTHORIZED' : 'BAD_REQUEST', message } }, { status });
-
-/** Only this site's own pages may post here (the session cookie is SameSite=Lax, this is a second check). */
-function sameOrigin(request: NextRequest): boolean {
-  const origin = request.headers.get('origin');
-  if (!origin) return true;
-  try {
-    return new URL(origin).host === (request.headers.get('x-forwarded-host') ?? request.headers.get('host'));
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Hands the film of an episode to the AI Cinema API with the studio's token, which the browser never sees.

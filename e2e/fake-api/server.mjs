@@ -191,6 +191,10 @@ async function route(req, res) {
     const project = db.projects.find((item) => item.id === match[1]);
     return project ? send(res, 200, projectDetail(project)) : fail(res, 404, 'NOT_FOUND', 'Project not found');
   }
+  // Like local disk storage: no signed URLs, so Studio Web falls back to the multipart route.
+  if (method === 'POST' && /^\/studio-portal\/episodes\/[^/]+\/media\/uploads$/.test(path)) {
+    return send(res, 501, { error: { code: 'NOT_IMPLEMENTED', message: 'No direct uploads', details: { reason: 'DIRECT_UPLOAD_UNSUPPORTED' } } });
+  }
   if (method === 'POST' && (match = path.match(/^\/studio-portal\/episodes\/([^/]+)\/media(\/upload)?$/))) {
     return deliver(res, match[1], match[2] ? 'UPLOAD' : body.sourceMethod);
   }
