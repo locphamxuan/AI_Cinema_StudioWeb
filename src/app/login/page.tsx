@@ -15,60 +15,42 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { expired } = await searchParams;
   const notice = expired ? 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.' : undefined;
   return (
-    <main className="grid min-h-screen bg-background text-foreground lg:grid-cols-[1.1fr_1fr]">
+    <main className="grid min-h-dvh bg-background p-2 text-foreground lg:grid-cols-2">
+      {/* The brand panel of the template's two-column login, on the right from lg up. */}
       <section
         aria-label="Studio Web"
-        className="relative hidden overflow-hidden bg-[#07080c] px-12 py-14 text-slate-100 lg:flex lg:flex-col lg:justify-between"
+        className="relative order-2 hidden overflow-hidden rounded-3xl bg-primary px-10 py-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between"
       >
-        {/* Projector light over a film-strip edge: the brand mood, drawn with gradients only. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(250,204,21,0.22),transparent_55%),radial-gradient(ellipse_at_90%_100%,rgba(244,63,94,0.18),transparent_50%)]"
+          className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(135deg,currentColor_0_14px,transparent_14px_28px)] opacity-[0.06]"
         />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-[repeating-linear-gradient(180deg,transparent_0_14px,rgba(255,255,255,0.08)_14px_26px)]"
-        />
-        <div className="relative flex items-center gap-3">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-marquee text-slate-950">
-            <Clapperboard className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-sm font-extrabold tracking-[0.2em]">AI CINEMA</p>
-            <p className="text-xs text-slate-400">Cổng đối tác sản xuất</p>
-          </div>
+        <div className="relative space-y-3">
+          <Clapperboard className="size-10" aria-hidden="true" />
+          <p className="text-sm font-semibold tracking-[0.2em] uppercase opacity-80">AI Cinema · Studio đối tác</p>
+          <h2 className="max-w-md text-3xl leading-tight font-semibold">Từ hợp đồng đến từng thước phim, trên một cổng duy nhất.</h2>
         </div>
-        <div className="relative max-w-md space-y-8">
-          <h2 className="text-4xl font-black leading-tight tracking-tight">
-            Từ hợp đồng <span className="text-marquee">đến từng thước phim</span>, trên một cổng duy nhất.
-          </h2>
-          <ol className="space-y-5">
-            {JOURNEY.map(({ icon: Icon, title, text }, index) => (
-              <li key={title} className="flex gap-4">
-                <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-50/15 bg-slate-50/5">
-                  <Icon className="h-4 w-4 text-marquee" aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold">{`${index + 1}. ${title}`}</p>
-                  <p className="text-sm leading-relaxed text-slate-400">{text}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <p className="relative text-xs text-slate-500">Chỉ dành cho Studio đối tác có tài khoản do AI Cinema cấp.</p>
+        <ol className="relative grid grid-cols-3 gap-6">
+          {JOURNEY.map(({ icon: Icon, title, text }, index) => (
+            <li key={title} className="space-y-1 border-l border-primary-foreground/30 pl-3 text-sm">
+              <Icon className="mb-2 size-4" aria-hidden="true" />
+              <p className="font-semibold">{`${index + 1}. ${title}`}</p>
+              <p className="opacity-80">{text}</p>
+            </li>
+          ))}
+        </ol>
       </section>
 
-      <section className="relative flex flex-col items-center justify-center px-4 py-12 sm:px-10">
+      <section className="relative order-1 flex min-h-[calc(100dvh-1rem)] flex-col items-center justify-center px-4 py-12 sm:px-10">
         <div className="absolute top-5 right-5">
           <ThemeToggle />
         </div>
         <div className="w-full max-w-sm space-y-8">
-          <div className="space-y-2">
+          <div className="space-y-2 text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-muted lg:hidden">
               <Clapperboard className="h-3.5 w-3.5" aria-hidden="true" /> AI Cinema · Studio Partner
             </span>
-            <h1 className="text-3xl font-black tracking-tight">Studio Web</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">Studio Web</h1>
             <p className="text-sm leading-relaxed text-muted">
               Đăng nhập bằng email và mật khẩu tài khoản Studio để vào trang làm việc của bạn.
             </p>
