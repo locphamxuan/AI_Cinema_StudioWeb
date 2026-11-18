@@ -26,6 +26,8 @@
 }
 
 @theme inline {
+  /* Marquee gold of the login brand panel, which stays dark in both themes. */
+  --color-marquee: #fcd34d;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

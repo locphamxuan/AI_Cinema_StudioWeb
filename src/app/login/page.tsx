@@ -1,67 +1,84 @@
-import { Clapperboard, KeyRound } from 'lucide-react';
+import { Clapperboard, FileSignature, Film, ShieldCheck } from 'lucide-react';
 import { LoginForm } from '@/components/LoginForm';
-import { getConfig } from '@/lib/config';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { BUTTON, CARD, ErrorCard } from '@/components/ui';
-
-/** Why the OAuth callback sent the studio back here (?error=...). */
-const OAUTH_ERROR: Record<string, string> = {
-  denied: 'Bạn đã từ chối cấp quyền cho Studio Web.',
-  state: 'Phiên đăng nhập không khớp hoặc đã quá 10 phút, vui lòng thử lại.',
-  network: 'Không kết nối được tới máy chủ AI Cinema.',
-  oauth: 'AI Cinema không xác nhận được đăng nhập (chỉ tài khoản Studio có hợp đồng mới được cấp quyền).',
-};
 
 export const metadata = { title: 'Đăng nhập - Studio Web' };
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ expired?: string; error?: string }>;
-}) {
-  const { expired, error } = await searchParams;
-  const { passwordLogin } = getConfig();
+/** What a partner studio does here, in the order MF-1 runs it. */
+const JOURNEY = [
+  { icon: FileSignature, title: 'Nhận và ký hợp đồng', text: 'Hợp đồng có sẵn tên phim, tập, hạn giao và ngân sách.' },
+  { icon: Film, title: 'Giao từng tập phim', text: 'Tải tệp MP4 / MOV hoặc dán đường dẫn HLS cho Reviewer duyệt.' },
+  { icon: ShieldCheck, title: 'Theo dõi duyệt nội dung', text: 'Xem kết quả duyệt, gắn nhãn AI và yêu cầu chỉnh sửa.' },
+];
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ expired?: string }> }) {
+  const { expired } = await searchParams;
   const notice = expired ? 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.' : undefined;
   return (
-    <main className="relative mx-auto flex min-h-screen flex-col items-center justify-center bg-[#F9FAFB] px-4 py-12 text-slate-900 dark:bg-[#090B10] dark:text-slate-100 sm:px-6">
-      <div className="absolute top-5 right-5">
-        <ThemeToggle />
-      </div>
-      <div className={`${CARD} w-full max-w-md space-y-6 p-7 shadow-sm sm:p-9`}>
-        <div className="space-y-3 text-center">
-          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#121212] text-white shadow-xs dark:bg-white dark:text-slate-900">
+    <main className="grid min-h-screen bg-background text-foreground lg:grid-cols-[1.1fr_1fr]">
+      <section
+        aria-label="Studio Web"
+        className="relative hidden overflow-hidden bg-[#07080c] px-12 py-14 text-slate-100 lg:flex lg:flex-col lg:justify-between"
+      >
+        {/* Projector light over a film-strip edge: the brand mood, drawn with gradients only. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(250,204,21,0.22),transparent_55%),radial-gradient(ellipse_at_90%_100%,rgba(244,63,94,0.18),transparent_50%)]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-[repeating-linear-gradient(180deg,transparent_0_14px,rgba(255,255,255,0.08)_14px_26px)]"
+        />
+        <div className="relative flex items-center gap-3">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-marquee text-slate-950">
             <Clapperboard className="h-5 w-5" aria-hidden="true" />
-          </div>
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-2">
-              <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">AI CINEMA</span>
-              <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
-                Studio Partner
-              </span>
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Studio Web</h1>
-            <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-              Đăng nhập bằng tài khoản Studio đối tác do AI Cinema cấp để ký hợp đồng và bàn giao phim.
-            </p>
+          </span>
+          <div>
+            <p className="text-sm font-extrabold tracking-[0.2em]">AI CINEMA</p>
+            <p className="text-xs text-slate-400">Cổng đối tác sản xuất</p>
           </div>
         </div>
-        {error && <ErrorCard message={OAUTH_ERROR[error] ?? OAUTH_ERROR.oauth} />}
-        {!passwordLogin && notice && !error && <ErrorCard message={notice} />}
-        {/* A full page navigation: the route answers a redirect to the AI Cinema consent screen. */}
-        <a href="/api/auth/login" className={`${BUTTON} w-full justify-center py-3`}>
-          <KeyRound className="h-4 w-4" aria-hidden="true" />
-          Đăng nhập bằng tài khoản AI Cinema
-        </a>
-        {passwordLogin && (
-          <div className="space-y-4 border-t border-border pt-5">
-            <p className="text-center text-[11px] text-muted">Hoặc đăng nhập bằng email (chỉ ở môi trường phát triển)</p>
-            <LoginForm notice={error ? undefined : notice} />
+        <div className="relative max-w-md space-y-8">
+          <h2 className="text-4xl font-black leading-tight tracking-tight">
+            Từ hợp đồng <span className="text-marquee">đến từng thước phim</span>, trên một cổng duy nhất.
+          </h2>
+          <ol className="space-y-5">
+            {JOURNEY.map(({ icon: Icon, title, text }, index) => (
+              <li key={title} className="flex gap-4">
+                <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-50/15 bg-slate-50/5">
+                  <Icon className="h-4 w-4 text-marquee" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold">{`${index + 1}. ${title}`}</p>
+                  <p className="text-sm leading-relaxed text-slate-400">{text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <p className="relative text-xs text-slate-500">Chỉ dành cho Studio đối tác có tài khoản do AI Cinema cấp.</p>
+      </section>
+
+      <section className="relative flex flex-col items-center justify-center px-4 py-12 sm:px-10">
+        <div className="absolute top-5 right-5">
+          <ThemeToggle />
+        </div>
+        <div className="w-full max-w-sm space-y-8">
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-muted lg:hidden">
+              <Clapperboard className="h-3.5 w-3.5" aria-hidden="true" /> AI Cinema · Studio Partner
+            </span>
+            <h1 className="text-3xl font-black tracking-tight">Studio Web</h1>
+            <p className="text-sm leading-relaxed text-muted">
+              Đăng nhập bằng email và mật khẩu tài khoản Studio để vào trang làm việc của bạn.
+            </p>
           </div>
-        )}
-      </div>
-      <p className="mt-6 text-center text-[11px] text-slate-500 dark:text-slate-400">
-        Chỉ dành cho tài khoản Studio đối tác do AI Cinema cấp.
-      </p>
+          <LoginForm notice={notice} />
+          <p className="text-xs leading-relaxed text-muted">
+            Chưa có tài khoản hoặc quên mật khẩu? Liên hệ Admin AI Cinema để được cấp lại.
+          </p>
+        </div>
+      </section>
     </main>
   );
 }
