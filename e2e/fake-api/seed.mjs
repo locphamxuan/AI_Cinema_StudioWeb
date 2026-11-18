@@ -29,6 +29,7 @@ function contract(id, projectId, round, fields) {
     round,
     previousId: null,
     costVnd: null,
+    budgetVnd: 200_000_000,
     proposedBy: null,
     status: 'SENT',
     terms: TERMS,

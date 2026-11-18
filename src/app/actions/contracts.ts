@@ -12,12 +12,15 @@ export interface ContractActionState {
 }
 
 const DONE: Record<ContractAction, string> = {
-  propose: 'Đã gửi giá và ký hợp đồng. Chờ Admin phản hồi.',
+  propose: 'Đã gửi hợp đồng Studio đã ký. Chờ Admin ký.',
   sign: 'Đã ký hợp đồng. Hợp đồng đã đủ hai chữ ký, dự án được bàn giao cho Studio.',
   counter: 'Đã gửi đề xuất giá mới kèm chữ ký Studio. Chờ Admin phản hồi.',
 };
 
-/** One form for the three moves of the studio on a contract round; `action` says which. */
+/**
+ * One form for the three moves of the studio on a contract round; `action` says which. Signing the contract it
+ * was sent (`propose`) carries a cost only when the studio asks for less than the budget (`priceMode=lower`).
+ */
 export async function actOnContract(_previous: ContractActionState, form: FormData): Promise<ContractActionState> {
   const contractId = String(form.get('contractId') ?? '');
   const action = String(form.get('action') ?? '') as ContractAction;
@@ -27,8 +30,9 @@ export async function actOnContract(_previous: ContractActionState, form: FormDa
   const pdf = checkSignedPdf(form.get('file'));
   if (!pdf.ok) return { error: pdf.message };
 
-  let cost = 0;
-  if (action !== 'sign') {
+  let cost: number | undefined;
+  const named = action === 'counter' || (action === 'propose' && form.get('priceMode') === 'lower');
+  if (named) {
     const parsed = parseCostVnd(String(form.get('costVnd') ?? ''));
     if (!parsed.ok) return { error: parsed.message };
     cost = parsed.value;
@@ -36,7 +40,8 @@ export async function actOnContract(_previous: ContractActionState, form: FormDa
   try {
     await withPortal((api) => {
       if (action === 'propose') return api.proposeCost(contractId, cost, pdf.file);
-      if (action === 'counter') return api.counterCost(contractId, cost, pdf.file);
+      // A counter always names its cost: it was parsed above.
+      if (action === 'counter') return api.counterCost(contractId, Number(cost), pdf.file);
       return api.signContract(contractId, pdf.file);
     });
   } catch (error) {

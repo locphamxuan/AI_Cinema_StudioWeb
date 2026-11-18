@@ -19,6 +19,7 @@ const contract = (over: Partial<Contract>): Contract => ({
   round: 2,
   previousId: 'c0',
   costVnd: 150_000_000,
+  budgetVnd: 200_000_000,
   proposedBy: 'ADMIN',
   status: 'ADMIN_COUNTERED',
   terms: 'Studio không chia sẻ phim cho bên thứ ba.',
@@ -88,26 +89,59 @@ describe('ContractRound', () => {
     expect(dialog).toHaveTextContent('ky.pdf');
   });
 
-  it('asks for confirmation when Enter is pressed in the cost field, and sends only once confirmed', async () => {
-    vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
-    actOnContract.mockClear();
-    render(<ContractRound contract={contract({ status: 'SENT', costVnd: null, proposedBy: null, adminSignedAt: null })} />);
+  const sentRound = () => contract({ status: 'SENT', costVnd: null, proposedBy: null, adminSignedAt: null });
+  async function attachSignedPdf() {
     await userEvent.upload(
       screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/),
       new File(['%PDF-1.4'], 'ky.pdf', { type: 'application/pdf' }),
     );
     await userEvent.click(screen.getByLabelText('Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.'));
+  }
+
+  it('shows the contract the studio received: its value at the budget, the steps and the unsigned PDF', () => {
+    render(<ContractRound contract={sentRound()} />);
+    expect(screen.getByText('Theo ngân sách của AI Cinema')).toBeInTheDocument();
+    expect(screen.getAllByText('200.000.000 VND')).toHaveLength(2);
+    expect(screen.getByText(/Tải hợp đồng chưa ký về và đọc kỹ/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Tải hợp đồng chưa ký/ })).toHaveAttribute('href', '/api/contracts/c1/documents/TEMPLATE');
+  });
+
+  it('signs at the budget by default, with no cost to type', async () => {
+    vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
+    render(<ContractRound contract={sentRound()} />);
+    expect(screen.queryByPlaceholderText('Ví dụ: 170.000.000')).not.toBeInTheDocument();
+    await attachSignedPdf();
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi hợp đồng đã ký' }));
+    expect(screen.getByRole('dialog', { name: 'Gửi hợp đồng Studio đã ký?' })).toHaveTextContent('200.000.000 VND');
+  });
+
+  it('refuses a lower price that is in fact above the budget', async () => {
+    vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
+    render(<ContractRound contract={sentRound()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Đề xuất giá thấp hơn' }));
+    await attachSignedPdf();
+    await userEvent.type(screen.getByPlaceholderText('Ví dụ: 170.000.000'), '250000000');
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi hợp đồng đã ký' }));
+    expect(screen.getByText('Giá đề xuất vượt ngân sách trần 200.000.000 VND.')).toBeInTheDocument();
+  });
+
+  it('asks for confirmation when Enter is pressed in the cost field, and sends only once confirmed', async () => {
+    vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
+    actOnContract.mockClear();
+    render(<ContractRound contract={sentRound()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Đề xuất giá thấp hơn' }));
+    await attachSignedPdf();
     const cost = screen.getByPlaceholderText('Ví dụ: 170.000.000');
     await userEvent.type(cost, '120000000');
     // Enter in the only text field submits the form implicitly in browsers; jsdom needs the submit event fired.
     fireEvent.submit(cost.closest('form')!);
     fireEvent.submit(cost.closest('form')!);
-    const dialog = screen.getByRole('dialog', { name: 'Gửi giá và ký hợp đồng?' });
+    const dialog = screen.getByRole('dialog', { name: 'Gửi hợp đồng Studio đã ký?' });
     expect(dialog).toHaveTextContent('120.000.000 VND');
     expect(actOnContract).not.toHaveBeenCalled();
     // jsdom's requestSubmit() validates against its own (empty) file list; the browser sees the uploaded file.
     (screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/) as HTMLInputElement).required = false;
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Gửi giá và ký' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Gửi hợp đồng đã ký' }));
     await waitFor(() => expect(actOnContract).toHaveBeenCalledTimes(1));
   });
 

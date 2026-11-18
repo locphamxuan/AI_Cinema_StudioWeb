@@ -18,6 +18,7 @@ const contract = (over: Partial<Contract>): Contract => ({
   round: 1,
   previousId: null,
   costVnd: null,
+  budgetVnd: 200_000_000,
   proposedBy: null,
   status: 'SENT',
   terms: 'Điều khoản',
@@ -33,7 +34,7 @@ const contract = (over: Partial<Contract>): Contract => ({
 describe('contract status → actions', () => {
   it('labels every status in Vietnamese', () => {
     expect(CONTRACT_STATUS_LABEL).toEqual({
-      SENT: 'Chờ Studio báo giá',
+      SENT: 'Chờ Studio ký',
       STUDIO_SIGNED: 'Studio đã ký – chờ Admin',
       ADMIN_COUNTERED: 'Admin đề xuất giá – chờ Studio',
       SIGNED: 'Đã ký đủ',

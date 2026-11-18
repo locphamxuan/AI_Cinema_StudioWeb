@@ -5,9 +5,9 @@ calls the AI Cinema API with that account, so films are exchanged only inside th
 
 | Screen | What the studio does |
 | --- | --- |
-| Đăng nhập | "Đăng nhập bằng tài khoản AI Cinema": OAuth 2.0 Authorization Code + PKCE. The studio signs in and approves the `studio:portal` scope on the consent screen of AI_Cinema_FE; only a STUDIO account can approve it. An email + password form is shown next to it in development (`STUDIO_PASSWORD_LOGIN`). |
+| Đăng nhập | Email and password of the STUDIO account the Admin created, on this site, in the same tab (`POST /auth/login`); any other role is refused and its session revoked. |
 | Tổng quan | Studio details, contracts waiting for it, projects in production, notifications. |
-| Hợp đồng | Every round of each negotiation. Fills in the cost and signs a template, or agrees with / counters the Admin's cost; every move uploads the contract PDF the studio signed (PDF, at most 10 MB). Downloads the Admin-signed, studio-signed and merged FINAL PDFs. |
+| Hợp đồng | Every round of each negotiation with its value and budget ceiling. Downloads the unsigned contract the system generates once the Admin approves the Final Script (film, episodes, deadlines, budget), then uploads it signed by the studio: at the budget, or at a lower cost. Agrees with / counters the Admin's cost. Every move uploads a signed PDF (at most 10 MB). Downloads the Admin-signed, studio-signed and merged FINAL PDFs. |
 | Dự án | Final Script, episodes with deadlines and status, latest delivery, the Reviewer's change requests; processes a failed delivery again. |
 | Nộp phim | Delivers one episode to the Reviewer (MP4/MOV file or link) with the mandatory AI Disclosure and a proposed AI label. |
 
@@ -38,20 +38,13 @@ contract: the Admin has to approve the Final Script of a project assigned to thi
 | --- | --- | --- |
 | `AI_CINEMA_API_URL` | `http://localhost:3001/api` | Base URL of the AI Cinema API, with the `/api` prefix. |
 | `COOKIE_SECURE` | `true` in production, otherwise `false` | Session cookies travel over https only. Set `false` to try a production build over plain http. |
-| `AI_CINEMA_WEB_URL` | `http://localhost:3000` | AI_Cinema_FE, whose `/oauth/authorize` page is the consent screen. |
-| `STUDIO_WEB_URL` | `http://localhost:3100` | This site; `STUDIO_WEB_URL/api/auth/callback` must be in the API's `OAUTH_STUDIO_WEB_REDIRECT_URIS`. |
-| `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET` | `studio-web` / empty | The client the API seeds; no secret = public client protected by PKCE. |
-| `STUDIO_PASSWORD_LOGIN` | `true` under `next dev`, otherwise `false` | Also show the email + password form. |
 
 ## Session
 
 The tokens live in httpOnly, SameSite=Lax cookies set by this site; page scripts never see them.
 
-- `GET /api/auth/login` stores a random `state` and PKCE verifier in a 10-minute httpOnly cookie and redirects to
-  `AI_CINEMA_WEB_URL/oauth/authorize`. `GET /api/auth/callback` checks `state`, exchanges the code with the verifier at the API's
-  `/oauth/token` (server to server) and opens the session; `sw_kind=oauth` makes refreshes use `/oauth/token` and logout
-  `/oauth/revoke`.
-
+- The login form is a Server Action: it calls `/auth/login`, keeps STUDIO accounts only and writes the session cookies; logout
+  calls `/auth/logout`.
 - `src/proxy.ts` swaps the refresh token for a new pair shortly before the access token expires. A refresh token works once, so
   concurrent requests share the refresh already running.
 - When the API refuses the token, pages, Server Actions and the PDF download end the session and open
@@ -69,7 +62,6 @@ src/
     (portal)/         overview, contracts, projects, film delivery
     actions/          Server Actions: login, logout, contract moves, notifications
     api/episodes/     route handler that forwards a film to the API
-    api/auth/         OAuth login and callback
     api/contracts/    downloads a signed contract PDF with the session's token
   components/         screens and forms
   lib/

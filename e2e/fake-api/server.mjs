@@ -2,15 +2,13 @@
 // It answers the endpoints Studio Web calls with the shapes of the real API (`/api/auth/*`, `/api/studio-portal/*`,
 // `/api/notifications*`), keeps its data in memory, and goes back to the seed on `POST /__test/reset`.
 import { createServer } from 'node:http';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { seed, STUDIO_ACCOUNT } from './seed.mjs';
 
 const PORT = Number(process.env.FAKE_API_PORT ?? 3299);
 
 let db = seed();
 const tokens = { access: new Set(), refresh: new Set() };
-/** OAuth codes waiting for their exchange: code -> { challenge, redirectUri }. */
-const codes = new Map();
 
 const send = (res, status, body) => {
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -18,7 +16,7 @@ const send = (res, status, body) => {
 };
 const fail = (res, status, code, message) => send(res, status, { error: { code, message } });
 
-/** JSON, urlencoded (OAuth) or multipart (signed PDF + costVnd) bodies, read loosely as the tests need. */
+/** JSON or multipart (signed PDF + costVnd) bodies, read loosely as the tests need. */
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -44,36 +42,6 @@ function issueSession() {
   tokens.refresh.add(refreshToken);
   const { id, email, fullName, role } = STUDIO_ACCOUNT;
   return { accessToken, accessTokenExpiresIn: 1800, refreshToken, user: { id, email, fullName, role, permissions: [] } };
-}
-
-const oauthTokens = () => {
-  const session = issueSession();
-  return { access_token: session.accessToken, token_type: 'Bearer', expires_in: 1800, refresh_token: session.refreshToken, scope: 'studio:portal' };
-};
-const oauthFail = (res, error) => send(res, 400, { error, error_description: error });
-
-/** The consent screen of AI_Cinema_FE, answered at once: redirects back to Studio Web with a code (or a denial). */
-function authorize(res, params) {
-  const code = randomUUID();
-  codes.set(code, { challenge: params.get('code_challenge'), redirectUri: params.get('redirect_uri') });
-  const back = new URL(params.get('redirect_uri'));
-  if (params.get('deny')) back.searchParams.set('error', 'access_denied');
-  else back.searchParams.set('code', code);
-  back.searchParams.set('state', params.get('state'));
-  res.writeHead(302, { Location: back.toString() });
-  res.end();
-}
-
-function oauthToken(res, body) {
-  if (body.client_id !== 'studio-web') return send(res, 401, { error: 'invalid_client' });
-  if (body.grant_type === 'refresh_token') {
-    return tokens.refresh.delete(body.refresh_token) ? send(res, 200, oauthTokens()) : oauthFail(res, 'invalid_grant');
-  }
-  const pending = codes.get(body.code);
-  codes.delete(body.code);
-  const challenge = createHash('sha256').update(body.code_verifier ?? '').digest('base64url');
-  if (!pending || pending.redirectUri !== body.redirect_uri || pending.challenge !== challenge) return oauthFail(res, 'invalid_grant');
-  return send(res, 200, oauthTokens());
 }
 
 const now = () => new Date().toISOString();
@@ -105,7 +73,8 @@ function openNextRound(contract, fields) {
 }
 
 const CONTRACT_MOVES = {
-  propose: { from: 'SENT', apply: (c, cost) => Object.assign(c, { costVnd: cost, proposedBy: 'STUDIO', status: 'STUDIO_SIGNED', studioSignedAt: now() }) },
+  // Without a cost the studio signs at the budget printed on the contract, as the real API does.
+  propose: { from: 'SENT', apply: (c, cost) => Object.assign(c, { costVnd: cost ?? c.budgetVnd, proposedBy: 'STUDIO', status: 'STUDIO_SIGNED', studioSignedAt: now() }) },
   sign: {
     from: 'ADMIN_COUNTERED',
     apply: (c) => {
@@ -182,12 +151,6 @@ async function route(req, res) {
     db = seed();
     return send(res, 204);
   }
-  if (method === 'GET' && path === '/oauth/authorize') return authorize(res, url.searchParams);
-  if (method === 'POST' && path === '/oauth/token') return oauthToken(res, body);
-  if (method === 'POST' && path === '/oauth/revoke') {
-    tokens.refresh.delete(body.token);
-    return send(res, 200, {});
-  }
   if (method === 'POST' && path === '/auth/login') {
     const ok = body.email === STUDIO_ACCOUNT.email && body.password === STUDIO_ACCOUNT.password;
     return ok ? send(res, 200, issueSession()) : fail(res, 401, 'UNAUTHORIZED', 'Invalid email or password');
@@ -211,6 +174,11 @@ async function route(req, res) {
   }
   if (method === 'POST' && (match = path.match(/^\/studio-portal\/contracts\/([^/]+)\/(propose|sign|counter)$/))) {
     return contractMove(res, match[1], match[2], body);
+  }
+  if (method === 'GET' && (match = path.match(/^\/studio-portal\/contracts\/([^/]+)\/template$/))) {
+    if (!db.contracts.some((c) => c.id === match[1])) return fail(res, 404, 'NOT_FOUND', 'Contract not found');
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="hop-dong-${match[1]}.pdf"` });
+    return res.end(PDF);
   }
   if (method === 'GET' && (match = path.match(/^\/studio-portal\/contracts\/([^/]+)\/documents\/(ADMIN|STUDIO|FINAL)\/content$/))) {
     const doc = db.contracts.find((c) => c.id === match[1])?.documents?.find((d) => d.side === match[2]);
