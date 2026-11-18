@@ -52,7 +52,7 @@ async function Overview() {
   return (
     <>
       <section className={`${CARD} space-y-1 p-6`}>
-        <h1 className="text-2xl font-extrabold tracking-tight text-balance text-slate-900 dark:text-white">
+        <h1 className="text-2xl font-semibold tracking-tight text-balance">
           Xin chào, {studio.name}
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -80,36 +80,36 @@ async function Overview() {
 
         <Link
           href="/contracts"
-          className={`${CARD} group flex flex-col justify-between space-y-3 p-6 transition-all hover:-translate-y-0.5 hover:shadow-md`}
+          className={`${CARD} group flex flex-col justify-between space-y-3 bg-linear-to-t from-primary/5 to-card p-6 transition-shadow hover:shadow-md`}
         >
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
               Hợp đồng chờ Studio xử lý
             </span>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-800 transition-colors group-hover:bg-[#121212] group-hover:text-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:group-hover:bg-white dark:group-hover:text-slate-900">
+            <span className="flex size-7 items-center justify-center rounded-lg border bg-subtle text-muted transition-colors group-hover:text-primary">
               <FileSignature className="h-4 w-4" aria-hidden="true" />
             </span>
           </div>
           <div>
-            <p className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">{waiting}</p>
+            <p className="text-3xl leading-none font-medium tracking-tight tabular-nums">{waiting}</p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">trên tổng {contracts.length} vòng hợp đồng</p>
           </div>
         </Link>
 
         <Link
           href="/projects"
-          className={`${CARD} group flex flex-col justify-between space-y-3 p-6 transition-all hover:-translate-y-0.5 hover:shadow-md`}
+          className={`${CARD} group flex flex-col justify-between space-y-3 bg-linear-to-t from-primary/5 to-card p-6 transition-shadow hover:shadow-md`}
         >
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
               Dự án đang sản xuất
             </span>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-800 transition-colors group-hover:bg-[#121212] group-hover:text-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:group-hover:bg-white dark:group-hover:text-slate-900">
+            <span className="flex size-7 items-center justify-center rounded-lg border bg-subtle text-muted transition-colors group-hover:text-primary">
               <Film className="h-4 w-4" aria-hidden="true" />
             </span>
           </div>
           <div>
-            <p className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">{producing}</p>
+            <p className="text-3xl leading-none font-medium tracking-tight tabular-nums">{producing}</p>
             <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
               {producingList[0] ? `Đang chạy: ${producingList[0].title}` : `trên tổng ${projects.length} dự án`}
             </p>
@@ -118,16 +118,16 @@ async function Overview() {
       </div>
 
       {heroProject && (
-        <section className="flex flex-col justify-between gap-5 rounded-3xl border border-slate-800 bg-[#12151E] p-6 text-white shadow-md dark:border-white/10 dark:bg-black/80 sm:flex-row sm:items-center sm:p-7">
+        <section className="flex flex-col justify-between gap-5 rounded-xl bg-primary p-6 text-primary-foreground shadow-lg shadow-primary/20 sm:flex-row sm:items-center sm:p-7">
           <div className="space-y-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold text-emerald-300 dark:text-emerald-300">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 dark:bg-emerald-400" aria-hidden="true" />
+            <span className="inline-flex items-center gap-2 rounded-md bg-primary-foreground/15 px-2.5 py-1 text-[11px] font-semibold">
+              <span className="size-2 rounded-full bg-primary-foreground" aria-hidden="true" />
               {PROJECT_STATUS_LABEL[heroProject.status] ?? heroProject.status}
             </span>
-            <h2 className="text-xl font-extrabold tracking-tight text-white dark:text-white sm:text-2xl">
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
               Dự án: {heroProject.title}
             </h2>
-            <p className="text-xs text-slate-300 sm:text-sm">
+            <p className="text-xs opacity-85 sm:text-sm">
               {heroProject.episodeCount} tập
               {heroProject.contract?.costVnd != null ? ` • Giá trị HĐ: ${formatVnd(heroProject.contract.costVnd)}` : ''}
               {heroProject.handedOffAt ? ` • Bàn giao: ${formatDateTime(heroProject.handedOffAt)}` : ''}
@@ -135,7 +135,7 @@ async function Overview() {
           </div>
           <Link
             href={`/projects/${heroProject.id}`}
-            className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-white px-5 py-2.5 text-xs font-semibold text-slate-900 shadow-xs transition-all hover:bg-slate-100 dark:bg-white dark:text-slate-900 sm:self-center sm:text-sm"
+            className="inline-flex h-9 shrink-0 items-center gap-2 self-start rounded-lg bg-primary-foreground px-4 text-sm font-semibold text-primary transition-opacity hover:opacity-90 sm:self-center"
           >
             Mở dự án <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
