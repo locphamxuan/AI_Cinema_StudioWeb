@@ -106,6 +106,17 @@ describe('ContractRound', () => {
     expect(screen.getByRole('link', { name: /Tải hợp đồng chưa ký/ })).toHaveAttribute('href', '/api/contracts/c1/documents/TEMPLATE');
   });
 
+  it('links every signed copy of the round for download', () => {
+    const doc = { fileName: 'k.pdf', sizeBytes: 10, checksum: 'x', uploadedAt: '2026-11-18T00:00:00.000Z' };
+    render(
+      <ContractRound
+        contract={{ ...sentRound(), documents: [{ ...doc, id: 'd1', side: 'STUDIO' }, { ...doc, id: 'd2', side: 'FINAL' }] }}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'Bản Studio đã ký' })).toHaveAttribute('href', '/api/contracts/c1/documents/STUDIO');
+    expect(screen.getByRole('link', { name: 'Bản cuối (đủ hai chữ ký)' })).toHaveAttribute('href', '/api/contracts/c1/documents/FINAL');
+  });
+
   it('signs at the budget by default, with no cost to type', async () => {
     vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
     render(<ContractRound contract={sentRound()} />);
