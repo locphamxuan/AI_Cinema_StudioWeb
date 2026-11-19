@@ -49,24 +49,24 @@ export function PortalHeader({
   ];
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-4 p-3 text-foreground md:sticky md:top-0 md:h-screen md:w-64">
+    <aside className="flex w-full shrink-0 flex-col gap-4 p-3 text-on-booth/90 md:sticky md:top-0 md:h-screen md:w-64">
       <div className="flex items-center justify-between gap-2 px-1">
         <Link href="/" className="flex min-w-0 items-center gap-2.5 rounded-lg p-1">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-primary to-highlight text-on-booth shadow-lg shadow-primary/30">
             <Clapperboard className="size-4" aria-hidden="true" />
           </span>
           <span className="grid min-w-0 leading-tight">
-            <span className="truncate text-sm font-bold tracking-tight">AI Cinema</span>
-            <span className="truncate text-xs text-muted">Studio đối tác</span>
+            <span className="truncate font-display text-xl font-bold tracking-wide">AI Cinema</span>
+            <span className="truncate text-xs text-on-booth/55">Studio đối tác</span>
           </span>
         </Link>
-        <ThemeToggle />
+        <ThemeToggle onBooth />
       </div>
 
       <nav aria-label="Điều hướng" className="flex flex-1 flex-col gap-4">
         {groups.map((group) => (
           <div key={group.label} className="space-y-1">
-            <p className="px-2.5 text-xs font-medium text-muted">{group.label}</p>
+            <p className="px-2.5 text-xs font-medium text-on-booth/45">{group.label}</p>
             <div className="flex flex-wrap gap-1 md:flex-col">
               {group.items.map(({ href, label, ariaLabel, icon: Icon, badge, ...rest }) => {
                 const active = !('anchor' in rest) && isActive(pathname, href);
@@ -76,7 +76,7 @@ export function PortalHeader({
                     href={href}
                     aria-label={ariaLabel}
                     aria-current={active ? 'page' : undefined}
-                    className={`${ITEM} ${active ? 'bg-card font-medium shadow-xs' : 'text-muted hover:bg-card/70 hover:text-foreground'}`}
+                    className={`${ITEM} ${active ? 'bg-linear-to-r from-primary/30 to-transparent font-medium text-on-booth shadow-[inset_3px_0_0_var(--primary)]' : 'text-on-booth/65 hover:bg-on-booth/5 hover:text-on-booth'}`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
                       <Icon className={`size-4 shrink-0 ${active ? 'text-primary' : ''}`} aria-hidden="true" />
@@ -94,19 +94,19 @@ export function PortalHeader({
       </nav>
 
       <div className="flex items-center gap-2.5 rounded-lg p-2">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-subtle text-xs font-bold">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-on-booth/10 text-xs font-bold">
           {studioName.trim().charAt(0).toUpperCase() || 'S'}
         </span>
         <span className="grid min-w-0 flex-1 leading-tight">
           <span className="truncate text-sm font-medium">{studioName}</span>
-          <span className="truncate text-xs text-muted">{contactLabel || 'Đối tác sản xuất'}</span>
+          <span className="truncate text-xs text-on-booth/55">{contactLabel || 'Đối tác sản xuất'}</span>
         </span>
         <form action={logout}>
           <button
             type="submit"
             aria-label="Đăng xuất"
             title="Đăng xuất"
-            className="flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-card hover:text-foreground"
+            className="flex size-8 cursor-pointer items-center justify-center rounded-lg text-on-booth/60 transition-colors hover:bg-on-booth/10 hover:text-on-booth"
           >
             <LogOut className="size-4" aria-hidden="true" />
           </button>
