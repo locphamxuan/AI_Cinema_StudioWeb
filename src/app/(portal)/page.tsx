@@ -86,12 +86,12 @@ async function Overview() {
             <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
               Hợp đồng chờ Studio xử lý
             </span>
-            <span className="flex size-7 items-center justify-center rounded-lg border bg-subtle text-muted transition-colors group-hover:text-primary">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-amber-500/12 text-amber-600 dark:bg-amber-400/12 dark:text-amber-400">
               <FileSignature className="h-4 w-4" aria-hidden="true" />
             </span>
           </div>
           <div>
-            <p className="text-3xl leading-none font-medium tracking-tight tabular-nums">{waiting}</p>
+            <p className="text-3xl leading-none font-semibold tracking-tight tabular-nums">{waiting}</p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">trên tổng {contracts.length} vòng hợp đồng</p>
           </div>
         </Link>
@@ -104,12 +104,12 @@ async function Overview() {
             <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
               Dự án đang sản xuất
             </span>
-            <span className="flex size-7 items-center justify-center rounded-lg border bg-subtle text-muted transition-colors group-hover:text-primary">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-primary/12 text-primary">
               <Film className="h-4 w-4" aria-hidden="true" />
             </span>
           </div>
           <div>
-            <p className="text-3xl leading-none font-medium tracking-tight tabular-nums">{producing}</p>
+            <p className="text-3xl leading-none font-semibold tracking-tight tabular-nums">{producing}</p>
             <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
               {producingList[0] ? `Đang chạy: ${producingList[0].title}` : `trên tổng ${projects.length} dự án`}
             </p>

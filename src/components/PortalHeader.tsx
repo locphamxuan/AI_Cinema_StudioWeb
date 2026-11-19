@@ -76,7 +76,7 @@ export function PortalHeader({
                     href={href}
                     aria-label={ariaLabel}
                     aria-current={active ? 'page' : undefined}
-                    className={`${ITEM} ${active ? 'bg-card font-medium shadow-xs' : 'text-muted hover:bg-card/70 hover:text-foreground'}`}
+                    className={`${ITEM} ${active ? 'bg-primary/10 font-medium text-primary shadow-[inset_3px_0_0_var(--primary)]' : 'text-muted hover:bg-card/70 hover:text-foreground'}`}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
                       <Icon className={`size-4 shrink-0 ${active ? 'text-primary' : ''}`} aria-hidden="true" />

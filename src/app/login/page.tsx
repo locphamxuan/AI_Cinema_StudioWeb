@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         />
         <div className="relative space-y-3">
           <Clapperboard className="size-10" aria-hidden="true" />
-          <p className="text-sm font-semibold tracking-[0.2em] uppercase opacity-80">AI Cinema · Studio đối tác</p>
+          <p className="text-sm font-semibold opacity-80">AI Cinema · Studio đối tác</p>
           <h2 className="max-w-md text-3xl leading-tight font-semibold">Từ hợp đồng đến từng thước phim, trên một cổng duy nhất.</h2>
         </div>
         <ol className="relative grid grid-cols-3 gap-6">
@@ -47,8 +47,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
         <div className="w-full max-w-sm space-y-8">
           <div className="space-y-2 text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-muted lg:hidden">
-              <Clapperboard className="h-3.5 w-3.5" aria-hidden="true" /> AI Cinema · Studio Partner
+            <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted lg:hidden">
+              <Clapperboard className="h-3.5 w-3.5" aria-hidden="true" /> AI Cinema Studio đối tác
             </span>
             <h1 className="text-3xl font-semibold tracking-tight">Studio Web</h1>
             <p className="text-sm leading-relaxed text-muted">
