@@ -19,23 +19,19 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       {/* The brand panel of the template's two-column login, on the right from lg up. */}
       <section
         aria-label="Studio Web"
-        className="relative order-2 hidden overflow-hidden rounded-3xl bg-primary px-10 py-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between"
+        className="marquee relative order-2 hidden overflow-hidden rounded-3xl px-10 py-14 lg:flex lg:flex-col lg:justify-between"
       >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(135deg,currentColor_0_14px,transparent_14px_28px)] opacity-[0.06]"
-        />
         <div className="relative space-y-3">
-          <Clapperboard className="size-10" aria-hidden="true" />
-          <p className="text-sm font-semibold tracking-[0.2em] uppercase opacity-80">AI Cinema · Studio đối tác</p>
-          <h2 className="max-w-md text-3xl leading-tight font-semibold">Từ hợp đồng đến từng thước phim, trên một cổng duy nhất.</h2>
+          <Clapperboard className="size-10 text-highlight" aria-hidden="true" />
+          <h2 className="max-w-lg font-display text-6xl leading-[0.9] font-bold tracking-wide">Từ hợp đồng đến từng thước phim</h2>
+          <p className="max-w-md text-base text-on-booth/80">Cổng làm việc của Studio đối tác AI Cinema.</p>
         </div>
         <ol className="relative grid grid-cols-3 gap-6">
           {JOURNEY.map(({ icon: Icon, title, text }, index) => (
-            <li key={title} className="space-y-1 border-l border-primary-foreground/30 pl-3 text-sm">
-              <Icon className="mb-2 size-4" aria-hidden="true" />
+            <li key={title} className="space-y-1 border-l-2 border-highlight/70 pl-3 text-sm">
+              <Icon className="mb-2 size-4 text-highlight" aria-hidden="true" />
               <p className="font-semibold">{`${index + 1}. ${title}`}</p>
-              <p className="opacity-80">{text}</p>
+              <p className="text-on-booth/75">{text}</p>
             </li>
           ))}
         </ol>
@@ -47,10 +43,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
         <div className="w-full max-w-sm space-y-8">
           <div className="space-y-2 text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-muted lg:hidden">
-              <Clapperboard className="h-3.5 w-3.5" aria-hidden="true" /> AI Cinema · Studio Partner
+            <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted lg:hidden">
+              <Clapperboard className="h-3.5 w-3.5" aria-hidden="true" /> AI Cinema Studio đối tác
             </span>
-            <h1 className="text-3xl font-semibold tracking-tight">Studio Web</h1>
+            <h1 className="text-5xl leading-none font-bold tracking-wide">Studio Web</h1>
             <p className="text-sm leading-relaxed text-muted">
               Đăng nhập bằng email và mật khẩu tài khoản Studio để vào trang làm việc của bạn.
             </p>
