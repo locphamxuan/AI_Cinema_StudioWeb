@@ -5,33 +5,33 @@
 
 :root {
   color-scheme: light;
-  --background: #f6f4fb;
-  --foreground: #1c1830;
+  --background: #f9fafb;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --border-color: #e4ddec;
-  --muted-color: #5e5670;
-  --accent: #d4245f;
-  --accent-dark: #b01a4f;
+  --border-color: rgba(148, 163, 184, 0.28);
+  --muted-color: #64748b;
+  --accent: #121212;
+  --accent-dark: #000000;
   /* AI Cinema brand violet, shared with AI_Cinema_FE; the sidebar frame and quiet fills of the shell. */
-  --primary: #d4245f;
+  --primary: #6646f0;
   --primary-foreground: #ffffff;
-  --surface: #140e1e;
-  --subtle: #f1ecf6;
+  --surface: #f3f2f8;
+  --subtle: #f1f0f7;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #16111f;
-  --foreground: #f2f0f8;
-  --card: #201929;
+  --background: #090b10;
+  --foreground: #f1f5f9;
+  --card: #111420;
   --border-color: rgba(255, 255, 255, 0.09);
-  --muted-color: #a89db8;
-  --accent: #ff4f8b;
-  --accent-dark: #ff6e9e;
-  --primary: #ff4f8b;
-  --primary-foreground: #1a0e18;
-  --surface: #0f0a17;
-  --subtle: #2b2138;
+  --muted-color: #94a3b8;
+  --accent: #ffffff;
+  --accent-dark: #e2e8f0;
+  --primary: #8b74ff;
+  --primary-foreground: #ffffff;
+  --surface: #07080c;
+  --subtle: #1a1d2b;
 }
 
 @theme inline {
@@ -46,18 +46,12 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-surface: var(--surface);
   --color-subtle: var(--subtle);
-  --color-highlight: #ffb547;
-  --color-booth: var(--surface);
-  /* Text and lines on an always-dark surface: the sidebar, the marquee, the clapperboard. */
-  --color-on-booth: #ffffff;
-  --font-display: var(--font-face-display), var(--font-face-body), system-ui, sans-serif;
-  --font-sans: var(--font-face-body), system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-face-body), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* Keyboard focus is always visible, in both themes; a mouse click shows no ring. */
@@ -79,55 +73,4 @@ option {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
-}
-
-/* Page titles in the marquee face of AI Cinema (condensed, set larger). */
-h1 {
-  font-family: var(--font-display);
-  letter-spacing: 0.01em;
-}
-
-/* The lit marquee of the AI Cinema back office, for the sign-in panel (as AI_Cinema_FE). */
-.marquee {
-  position: relative;
-  isolation: isolate;
-  color: #fff;
-  background:
-    radial-gradient(70% 140% at 0% 0%, rgb(212 36 95 / 0.55), transparent 62%),
-    radial-gradient(55% 140% at 100% 100%, rgb(255 181 71 / 0.4), transparent 60%),
-    radial-gradient(40% 90% at 70% 0%, rgb(109 74 255 / 0.35), transparent 70%),
-    #140e1e;
-}
-.marquee::before,
-.marquee::after {
-  content: '';
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  height: 8px;
-  z-index: -1;
-  background: radial-gradient(circle, #ffd98f 0 2.4px, rgb(255 217 143 / 0.25) 3px, transparent 3.6px) 0 50% / 18px 8px repeat-x;
-}
-.marquee::before {
-  top: 9px;
-}
-.marquee::after {
-  bottom: 9px;
-}
-
-/*
- * The clapperboard of Studio Web: the producing project shown as the slate a crew holds before a take.
- * The sticks are the striped bar on top; the fields below are written in chalk.
- */
-.clapper-sticks {
-  background: repeating-linear-gradient(115deg, #f6f4fb 0 22px, #140e1e 22px 44px);
-}
-.clapper-board {
-  background:
-    linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px) 0 0 / 100% 2.75rem,
-    #18121f;
-  color: #f6f4fb;
-}
-.clapper-field {
-  border-color: rgb(246 244 251 / 0.22);
 }

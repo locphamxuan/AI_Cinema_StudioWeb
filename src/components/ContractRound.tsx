@@ -33,7 +33,7 @@ export function ContractRound({ contract, withActions = true }: { contract: Cont
   return (
     <article className="space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-muted">Vòng {contract.round}</h3>
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted">Vòng {contract.round}</h3>
         <Badge tone={CONTRACT_STATUS_TONE[contract.status]}>{CONTRACT_STATUS_LABEL[contract.status] ?? contract.status}</Badge>
       </div>
       <Facts

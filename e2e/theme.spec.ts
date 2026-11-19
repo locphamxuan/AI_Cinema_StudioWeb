@@ -12,10 +12,10 @@ test('toggles light and dark themes cleanly with ThemeToggle', async ({ page }) 
     alert: await style(page, 'main [role="alert"]', 'color'),
     button: await style(page, 'button[type="submit"]', 'background-color'),
   };
-  expect(light.bg).toBe('rgb(246, 244, 251)');
+  expect(light.bg).toBe('rgb(249, 250, 251)');
 
   await page.getByRole('button', { name: 'Chuyển đổi giao diện sáng / tối' }).click();
-  await expect.poll(() => style(page, 'main', 'background-color')).toBe('rgb(22, 17, 31)');
+  await expect.poll(() => style(page, 'main', 'background-color')).toBe('rgb(9, 11, 16)');
   expect(await style(page, 'main [role="alert"]', 'color')).not.toBe(light.alert);
   expect(await style(page, 'button[type="submit"]', 'background-color')).not.toBe(light.button);
 });
@@ -26,5 +26,5 @@ test('keeps the chosen dark theme from the first paint after a reload', async ({
   await expect(page.locator('html')).toHaveClass(/dark/);
   await page.reload();
   await expect(page.locator('html')).toHaveClass(/dark/);
-  expect(await style(page, 'main', 'background-color')).toBe('rgb(22, 17, 31)');
+  expect(await style(page, 'main', 'background-color')).toBe('rgb(9, 11, 16)');
 });

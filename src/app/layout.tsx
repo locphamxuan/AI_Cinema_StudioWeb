@@ -1,11 +1,6 @@
 import type { Metadata, Viewport } from 'next';
-import { Be_Vietnam_Pro, Big_Shoulders } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
-
-// Be Vietnam Pro for reading, Big Shoulders (a cinema marquee face) for titles: the type of AI_Cinema_FE.
-const body = Be_Vietnam_Pro({ variable: '--font-face-body', subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700'], display: 'swap' });
-const display = Big_Shoulders({ variable: '--font-face-display', subsets: ['latin', 'vietnamese'], weight: ['600', '700', '800'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'Studio Web - AI Cinema',
@@ -14,8 +9,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f6f4fb' },
-    { media: '(prefers-color-scheme: dark)', color: '#16111f' },
+    { media: '(prefers-color-scheme: light)', color: '#f9fafb' },
+    { media: '(prefers-color-scheme: dark)', color: '#090b10' },
   ],
 };
 
@@ -24,7 +19,7 @@ const THEME_SCRIPT = `try{if(localStorage.getItem('ai_cinema_studio_theme')==='d
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="vi" suppressHydrationWarning className={`${body.variable} ${display.variable}`}>
+    <html lang="vi" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
