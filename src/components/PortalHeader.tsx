@@ -39,7 +39,7 @@ export function PortalHeader({
       items: [
         { href: '/', label: 'Tổng quan', ariaLabel: 'Tổng quan', icon: LayoutDashboard, badge: 0 },
         { href: '/contracts', label: 'Hợp đồng & Báo giá', ariaLabel: 'Hợp đồng', icon: FileSignature, badge: waitingContracts },
-        { href: '/projects', label: 'Dự án sản xuất', ariaLabel: 'Dự án', icon: Film, badge: producingProjects },
+        { href: '/projects', label: 'Dự án sản xuất', ariaLabel: 'Dự án', icon: Clapperboard, badge: producingProjects },
       ],
     },
     {
@@ -53,7 +53,7 @@ export function PortalHeader({
       <div className="flex items-center justify-between gap-2 px-1">
         <Link href="/" className="flex min-w-0 items-center gap-2.5 rounded-lg p-1">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Clapperboard className="size-4" aria-hidden="true" />
+            <Film className="size-4" aria-hidden="true" />
           </span>
           <span className="grid min-w-0 leading-tight">
             <span className="truncate text-sm font-bold tracking-tight">AI Cinema</span>

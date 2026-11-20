@@ -1,4 +1,4 @@
-import { Clapperboard } from 'lucide-react';
+import { Film } from 'lucide-react';
 import { LoginForm } from '@/components/LoginForm';
 import { PosterWall } from '@/components/PosterWall';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <div className="relative z-10 w-full max-w-sm space-y-6 rounded-2xl border border-border bg-card/95 p-8 shadow-2xl shadow-black/50 backdrop-blur-md">
         <div className="space-y-4 text-center">
           <span className="mx-auto flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Clapperboard className="size-5" aria-hidden="true" />
+            <Film className="size-5" aria-hidden="true" />
           </span>
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">Studio Web</h1>
