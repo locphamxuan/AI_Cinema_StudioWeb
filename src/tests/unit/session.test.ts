@@ -51,7 +51,7 @@ describe('refreshSession', () => {
 
   it('rejects a session that is not a studio account', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(session('ADMIN')), { status: 200 })));
-    await expect(refreshSession('http://api.test/api', 'admin-token')).rejects.toThrow('Tài khoản không phải tài khoản Studio.');
+    await expect(refreshSession('http://api.test/api', 'admin-token')).rejects.toThrow('Đây không phải tài khoản Studio.');
   });
 
   it('rejects a refused refresh token', async () => {

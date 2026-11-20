@@ -7,7 +7,7 @@ export const metadata = { title: 'Đăng nhập - Studio Web' };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ expired?: string }> }) {
   const { expired } = await searchParams;
-  const notice = expired ? 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.' : undefined;
+  const notice = expired ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' : undefined;
   return (
     <main className="relative flex min-h-dvh items-center justify-center bg-background px-4 py-10 text-foreground">
       <PosterWall />
@@ -21,11 +21,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </span>
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">Studio Web</h1>
-            <p className="text-sm leading-relaxed text-muted">Cổng làm việc của Studio đối tác AI Cinema. Đăng nhập bằng tài khoản Studio do Admin cấp.</p>
+            <p className="text-sm leading-relaxed text-muted">Dành cho Studio đối tác của AI Cinema</p>
           </div>
         </div>
         <LoginForm notice={notice} />
-        <p className="text-center text-xs leading-relaxed text-muted">Chưa có tài khoản hoặc quên mật khẩu? Liên hệ Admin AI Cinema để được cấp lại.</p>
+        <p className="text-center text-xs leading-relaxed text-muted">Quên mật khẩu? Liên hệ Admin AI Cinema.</p>
       </div>
     </main>
   );

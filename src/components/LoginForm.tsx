@@ -21,7 +21,7 @@ export function LoginForm({ notice }: { notice?: string }) {
           required
           defaultValue={state.email}
           className={LOGIN_INPUT}
-          placeholder="studio@aicinema.com"
+          placeholder="studio@congty.vn"
         />
       </label>
       <label className="block space-y-1.5 text-sm">

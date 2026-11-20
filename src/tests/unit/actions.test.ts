@@ -46,7 +46,7 @@ describe('login', () => {
     const fetchMock = vi.fn(async (url: string) => (url.endsWith('/auth/login') ? json(authSession('ADMIN')) : new Response(null, { status: 204 })));
     vi.stubGlobal('fetch', fetchMock);
     const state = await login({}, form({ email: 'admin@aicinema.com', password: 'pw' }));
-    expect(state.error).toBe('Tài khoản không phải tài khoản Studio.');
+    expect(state.error).toBe('Đây không phải tài khoản Studio.');
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       'http://localhost:3001/api/auth/login',
       'http://localhost:3001/api/auth/logout',
@@ -58,7 +58,7 @@ describe('login', () => {
     const fetchMock = vi.fn(async (url: string) => (url.endsWith('/auth/login') ? json(authSession('ADMIN')) : Promise.reject(new Error('offline'))));
     vi.stubGlobal('fetch', fetchMock);
     const state = await login({}, form({ email: 'admin@aicinema.com', password: 'pw' }));
-    expect(state.error).toBe('Tài khoản không phải tài khoản Studio.');
+    expect(state.error).toBe('Đây không phải tài khoản Studio.');
   });
 
   it('stores the session of a studio account and goes to the overview', async () => {

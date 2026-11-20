@@ -11,7 +11,7 @@ export const COOKIE = {
 } as const;
 
 const STUDIO_ROLE = 'STUDIO';
-export const NOT_STUDIO_MESSAGE = 'Tài khoản không phải tài khoản Studio.';
+export const NOT_STUDIO_MESSAGE = 'Đây không phải tài khoản Studio.';
 
 /** Refresh tokens live as long as the API keeps them (JWT_REFRESH_TTL_DAYS, 30 days by default). */
 const REFRESH_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
