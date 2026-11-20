@@ -49,7 +49,7 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
     expect(screen.getByLabelText('Mật khẩu')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /AI Cinema/ })).not.toBeInTheDocument();
-    expect(screen.getByText('1. Nhận và ký hợp đồng')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Studio Web' })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
