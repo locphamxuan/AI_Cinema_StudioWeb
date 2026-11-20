@@ -13,10 +13,10 @@
   --accent: #121212;
   --accent-dark: #000000;
   /* AI Cinema brand violet, shared with AI_Cinema_FE; the sidebar frame and quiet fills of the shell. */
-  --primary: #6646f0;
+  --primary: #121212;
   --primary-foreground: #ffffff;
-  --surface: #f3f2f8;
-  --subtle: #f1f0f7;
+  --surface: #f3f4f6;
+  --subtle: #f1f5f9;
 }
 
 .dark {
@@ -28,8 +28,8 @@
   --muted-color: #94a3b8;
   --accent: #ffffff;
   --accent-dark: #e2e8f0;
-  --primary: #8b74ff;
-  --primary-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #0f172a;
   --surface: #07080c;
   --subtle: #1a1d2b;
 }
@@ -51,7 +51,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-face-body), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* Keyboard focus is always visible, in both themes; a mouse click shows no ring. */
