@@ -61,7 +61,7 @@ export function looksLikeHls(raw: string): boolean {
 
 function fileProblem(file: File | null): string | null {
   if (!file) return 'Vui lòng chọn tệp phim.';
-  if (!VIDEO_FILE.test(file.name) || !videoType(file.type)) return 'Tệp phim phải là MP4 hoặc MOV.';
+  if (!VIDEO_FILE.test(file.name) || !videoType(file.type)) return 'Tệp phim phải là MP4, M4V hoặc MOV.';
   if (file.size === 0) return 'Tệp phim đang rỗng.';
   if (file.size > FILM_MAX_BYTES) return 'Tệp phim tối đa 2 GB; tệp lớn hơn hãy nộp bằng link.';
   return null;

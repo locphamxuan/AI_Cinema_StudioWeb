@@ -139,7 +139,7 @@ describe('SubmitFilmForm upload', () => {
     expect(screen.getByText('Đã chọn tap.webm (1 B).')).toBeInTheDocument();
     await fillDisclosure();
     await userEvent.click(screen.getByRole('button', { name: /Nộp phim cho Reviewer/ }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Tệp phim phải là MP4 hoặc MOV.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Tệp phim phải là MP4, M4V hoặc MOV.');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

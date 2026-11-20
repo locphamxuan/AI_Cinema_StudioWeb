@@ -47,7 +47,7 @@ async function Projects() {
             </div>
             <div className="flex items-center justify-end border-t border-border pt-3">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white transition-all group-hover:bg-accent-dark dark:text-slate-900">
-                Mở dự án &amp; Nộp phim <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                Mở dự án và nộp phim <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </span>
             </div>
           </Link>
@@ -60,7 +60,7 @@ async function Projects() {
 export default function ProjectsPage() {
   return (
     <>
-      <PageTitle title="Dự án" description="Các dự án AI Cinema đã gửi hợp đồng và đang bàn giao cho Studio sản xuất." />
+      <PageTitle title="Dự án" description="Dự án AI Cinema đã gửi hợp đồng cho Studio, và dự án đã bàn giao để Studio sản xuất." />
       <Guarded load={() => Projects()} />
     </>
   );

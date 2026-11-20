@@ -58,7 +58,7 @@ async function Overview() {
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {waiting
             ? `Có ${waiting} vòng hợp đồng đang chờ Studio ký. Mở Hợp đồng để xử lý.`
-            : 'Theo dõi hợp đồng, hạn giao từng tập và yêu cầu sửa của Reviewer AI Cinema.'}
+            : 'Theo dõi hợp đồng, hạn giao từng tập và yêu cầu sửa từ Reviewer của AI Cinema.'}
         </p>
       </section>
 
@@ -129,7 +129,7 @@ async function Overview() {
             </h2>
             <p className="text-xs opacity-85 sm:text-sm">
               {heroProject.episodeCount} tập
-              {heroProject.contract?.costVnd != null ? ` • Giá trị HĐ: ${formatVnd(heroProject.contract.costVnd)}` : ''}
+              {heroProject.contract?.costVnd != null ? ` • Giá trị hợp đồng: ${formatVnd(heroProject.contract.costVnd)}` : ''}
               {heroProject.handedOffAt ? ` • Bàn giao: ${formatDateTime(heroProject.handedOffAt)}` : ''}
             </p>
           </div>
