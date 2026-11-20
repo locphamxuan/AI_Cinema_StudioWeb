@@ -151,8 +151,8 @@ describe('Guarded', () => {
   });
 
   it('shows an API error instead of crashing the page', async () => {
-    render(await Guarded({ load: async () => Promise.reject(new ApiError(404, 'NOT_FOUND', 'Project not found')) }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Không tìm thấy dữ liệu: Project not found');
+    render(await Guarded({ load: async () => Promise.reject(new ApiError(404, 'NOT_FOUND', 'Movie project not found')) }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Không tìm thấy dự án phim.');
   });
 
   it('lets a redirect through', async () => {

@@ -107,12 +107,12 @@ describe('submitFilm', () => {
   });
 
   it('shows the API refusal with its details', async () => {
-    const body = { error: { code: 'CONFLICT', message: 'The contract of this project is not signed yet', details: ['episode 1'] } };
+    const body = { error: { code: 'CONFLICT', message: 'The contract of this project is not signed by both sides yet', details: ['episode 1'] } };
     const { Xhr } = fakeXhr([{ status: 409, responseText: JSON.stringify(body) }]);
     expect(await submitFilm('e1', input(), undefined, Xhr)).toEqual({
       ok: false,
       status: 409,
-      error: 'Không thể thực hiện ở trạng thái hiện tại: The contract of this project is not signed yet; episode 1',
+      error: 'Hợp đồng của dự án chưa được hai bên ký.',
     });
   });
 
@@ -121,7 +121,7 @@ describe('submitFilm', () => {
     expect(await submitFilm('e1', input(), undefined, Xhr)).toEqual({
       ok: false,
       status: 502,
-      error: 'Lỗi máy chủ (502): Request failed',
+      error: 'Lỗi máy chủ (502).',
     });
   });
 

@@ -80,7 +80,7 @@ describe('login', () => {
     expect((await login({}, new FormData())).error).toBe('Vui lòng nhập email và mật khẩu.');
     expect(fetchMock).not.toHaveBeenCalled();
     const state = await login({}, form({ email: 'studio@aicinema.com', password: 'pw' }));
-    expect(state.error).toContain('Down for maintenance');
+    expect(state.error).toBe('Lỗi máy chủ (503).');
   });
 });
 
@@ -150,7 +150,7 @@ describe('actOnContract', () => {
 
   it('proposes a lower cost and reports the API refusal', async () => {
     signedIn();
-    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async () => json({ error: { code: 'CONFLICT', message: 'The contract is not waiting for the studio' } }, 409));
+    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async () => json({ error: { code: 'CONFLICT', message: 'This project already has a contract' } }, 409));
     vi.stubGlobal('fetch', fetchMock);
     const state = await actOnContract(
       {},
@@ -160,7 +160,7 @@ describe('actOnContract', () => {
     const sent = fetchMock.mock.calls[0][1]?.body as FormData;
     expect(sent.get('costVnd')).toBe('170000000');
     expect((sent.get('file') as File).name).toBe('hop-dong.pdf');
-    expect(state.error).toBe('Không thể thực hiện ở trạng thái hiện tại: The contract is not waiting for the studio');
+    expect(state.error).toBe('Dự án đã có hợp đồng.');
   });
 
   it('counters with the cost typed, and refuses a malformed request or a missing cost', async () => {
@@ -210,9 +210,9 @@ describe('retryDelivery', () => {
 
   it('shows why the API refused, e.g. a newer delivery exists', async () => {
     signedIn();
-    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'CONFLICT', message: 'Only the latest failed delivery can be retried' } }, 409)));
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'CONFLICT', message: 'A newer version was delivered; retry that one' } }, 409)));
     const state = await retryDelivery({}, form({ mediaAssetId: 'm1' }));
-    expect(state.error).toBe('Không thể thực hiện ở trạng thái hiện tại: Only the latest failed delivery can be retried');
+    expect(state.error).toBe('Đã có bản phim mới hơn được nộp; hãy xử lý lại bản đó.');
   });
 
   it('needs a delivery and a session', async () => {
