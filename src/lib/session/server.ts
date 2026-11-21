@@ -5,20 +5,12 @@ import { ApiError } from '@/lib/api/http';
 import { portalApi, type PortalApi } from '@/lib/api/portal';
 import type { AuthSession } from '@/lib/api/types';
 import { EXPIRED_LOGIN_PATH, LOGIN_PATH } from './paths';
-import {
-  COOKIE,
-  kindOf,
-  needsRefresh,
-  refreshSession,
-  SESSION_COOKIE_NAMES,
-  sessionCookies,
-  type SessionKind,
-} from './tokens';
+import { COOKIE, needsRefresh, refreshSession, SESSION_COOKIE_NAMES, sessionCookies } from './tokens';
 
 /** Writes a new session (login, refresh): only Server Actions and Route Handlers may call this. */
-export async function saveSession(session: AuthSession, kind: SessionKind = 'password'): Promise<void> {
+export async function saveSession(session: AuthSession): Promise<void> {
   const store = await cookies();
-  for (const { name, value, options } of sessionCookies(session, getConfig().secureCookies, kind)) {
+  for (const { name, value, options } of sessionCookies(session, getConfig().secureCookies)) {
     store.set(name, value, options);
   }
 }
@@ -58,10 +50,9 @@ export async function mutationToken(): Promise<string | null> {
   if (!needsRefresh(access, store.get(COOKIE.expires)?.value)) return access ?? null;
   const refresh = store.get(COOKIE.refresh)?.value;
   if (!refresh) return null;
-  const kind = kindOf(store.get(COOKIE.kind)?.value);
   try {
-    const session = await refreshSession(getConfig().apiUrl, refresh, kind);
-    await saveSession(session, kind);
+    const session = await refreshSession(getConfig().apiUrl, refresh);
+    await saveSession(session);
     return session.accessToken;
   } catch {
     await clearSession();

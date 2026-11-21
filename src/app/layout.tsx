@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from 'next';
+import { Be_Vietnam_Pro } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
+
+// Be Vietnam Pro, drawn for Vietnamese, as AI_Cinema_FE.
+const body = Be_Vietnam_Pro({ variable: '--font-face-body', subsets: ['latin', 'vietnamese'], weight: ['400', '500', '600', '700'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'Studio Web - AI Cinema',
@@ -19,7 +23,7 @@ const THEME_SCRIPT = `try{if(localStorage.getItem('ai_cinema_studio_theme')==='d
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html lang="vi" suppressHydrationWarning className={body.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>

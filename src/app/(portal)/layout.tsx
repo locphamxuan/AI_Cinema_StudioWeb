@@ -3,7 +3,7 @@ import { PortalHeader } from '@/components/PortalHeader';
 import { needsStudio } from '@/lib/domain/contract';
 import { loadContracts, loadNotifications, loadProjects, loadStudio } from '@/lib/session/portal-data';
 
-/** Every screen after login: fixed left Contra sidebar, studio profile and page content. */
+/** Every screen after login: the inset sidebar of the template, and the page on a raised card beside it. */
 export default async function PortalLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const [studio, contracts, projects, notifications] = await Promise.all([
     loadStudio().catch((error: unknown) => {
@@ -31,7 +31,7 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
   const unreadNotifications = notifications.data.filter((n) => !n.readAt).length;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F9FAFB] text-slate-900 dark:bg-[#090B10] dark:text-slate-100 md:flex-row">
+    <div className="flex min-h-screen flex-col bg-surface text-foreground md:flex-row">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-card focus:px-4 focus:py-2 focus:text-sm focus:font-semibold"
@@ -45,7 +45,11 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
         producingProjects={producingProjects}
         unreadNotifications={unreadNotifications}
       />
-      <main id="main" className="mx-auto w-full min-w-0 max-w-6xl flex-1 space-y-6 p-4 sm:p-6 lg:p-8">{children}</main>
+      <div className="min-w-0 flex-1 p-2 md:pl-0">
+        <main id="main" className="min-h-full w-full space-y-6 rounded-xl border border-border bg-background p-4 shadow-xs sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-6xl space-y-6">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

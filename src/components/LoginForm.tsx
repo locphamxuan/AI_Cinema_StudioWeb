@@ -5,7 +5,7 @@ import { LogIn } from 'lucide-react';
 import { login, type LoginState } from '@/app/actions/auth';
 import { BUTTON, ErrorCard, INPUT } from './ui';
 
-const LOGIN_INPUT = `${INPUT} rounded-full px-4 py-2.5`;
+const LOGIN_INPUT = `${INPUT} h-10`;
 
 export function LoginForm({ notice }: { notice?: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(login, {});
@@ -21,7 +21,7 @@ export function LoginForm({ notice }: { notice?: string }) {
           required
           defaultValue={state.email}
           className={LOGIN_INPUT}
-          placeholder="studio@aicinema.com"
+          placeholder="studio@congty.vn"
         />
       </label>
       <label className="block space-y-1.5 text-sm">
@@ -35,7 +35,7 @@ export function LoginForm({ notice }: { notice?: string }) {
           placeholder="••••••••"
         />
       </label>
-      <button type="submit" disabled={pending} className={`${BUTTON} mt-2 w-full py-3`}>
+      <button type="submit" disabled={pending} className={`${BUTTON} mt-2 h-10 w-full`}>
         <LogIn className="h-4 w-4" aria-hidden="true" />
         {pending ? 'Đang đăng nhập…' : 'Đăng nhập'}
       </button>

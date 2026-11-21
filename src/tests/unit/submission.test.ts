@@ -18,7 +18,7 @@ describe('validateSubmission', () => {
 
   it('asks for an MP4/MOV file', () => {
     expect(validateSubmission(valid({ file: null }))).toEqual(['Vui lòng chọn tệp phim.']);
-    expect(validateSubmission(valid({ file: new File(['x'], 'tap.avi') }))).toEqual(['Tệp phim phải là MP4 hoặc MOV.']);
+    expect(validateSubmission(valid({ file: new File(['x'], 'tap.avi') }))).toEqual(['Tệp phim phải là MP4, M4V hoặc MOV.']);
     expect(validateSubmission(valid({ file: new File(['x'], 'TAP.MOV') }))).toEqual([]);
   });
 
@@ -32,7 +32,7 @@ describe('validateSubmission', () => {
       expect(validateSubmission(valid({ file: new File(['x'], name, { type }) }))).toEqual([]);
     }
     expect(validateSubmission(valid({ file: new File(['x'], 'tap.mp4', { type: 'image/png' }) }))).toEqual([
-      'Tệp phim phải là MP4 hoặc MOV.',
+      'Tệp phim phải là MP4, M4V hoặc MOV.',
     ]);
   });
 
@@ -42,7 +42,7 @@ describe('validateSubmission', () => {
     Object.defineProperty(huge, 'size', { value: FILM_MAX_BYTES + 1 });
     expect(validateSubmission(valid({ file: huge }))).toEqual(['Tệp phim tối đa 2 GB; tệp lớn hơn hãy nộp bằng link.']);
     expect(validateSubmission(valid({ file: new File(['x'], 'tap.webm', { type: 'video/webm' }) }))).toEqual([
-      'Tệp phim phải là MP4 hoặc MOV.',
+      'Tệp phim phải là MP4, M4V hoặc MOV.',
     ]);
   });
 

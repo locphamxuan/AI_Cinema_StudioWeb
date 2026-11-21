@@ -17,7 +17,7 @@ async function Project({ projectId }: { projectId: string }) {
     <>
       <PageTitle title={project.title} description={PROJECT_STATUS_LABEL[project.status] ?? project.status} />
       {!signed && (
-        <ErrorCard message="Hợp đồng chưa được ký đủ hai bên: Studio chỉ được nhận và nộp phim sau khi hợp đồng hoàn tất." />
+        <ErrorCard message="Hợp đồng chưa đủ hai chữ ký: Studio chỉ nộp phim được sau khi hợp đồng hoàn tất." />
       )}
       <div className="grid gap-5 md:grid-cols-2">
         <section className={`${CARD} space-y-3.5 p-6`}>

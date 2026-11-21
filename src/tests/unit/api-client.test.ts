@@ -34,7 +34,8 @@ describe('apiRequest', () => {
     const error = await apiRequest(BASE, '/x', { fetchImpl }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 400, code: 'BAD_REQUEST', details: ['costVnd must be a multiple of 1,000 VND'] });
-    expect(describeError(error)).toBe('Dữ liệu gửi lên không hợp lệ: costVnd must be a multiple of 1,000 VND');
+    // A validation detail the API words in English only falls back to what the status means.
+    expect(describeError(error)).toBe('Dữ liệu gửi lên không hợp lệ.');
   });
 
   it('reports a network failure in Vietnamese', async () => {
@@ -46,9 +47,13 @@ describe('apiRequest', () => {
   });
 
   it('describes a 409 with the message of the API', () => {
-    expect(describeError(new ApiError(409, 'CONFLICT', 'The contract is not signed yet'))).toBe(
-      'Không thể thực hiện ở trạng thái hiện tại: The contract is not signed yet',
+    expect(describeError(new ApiError(409, 'CONFLICT', 'The contract of this project is not signed by both sides yet'))).toBe(
+      'Hợp đồng của dự án chưa được hai bên ký.',
     );
+    expect(describeError(new ApiError(409, 'CONFLICT', 'Studio "Sao Việt" is deactivated', ['reason: STUDIO_INACTIVE']))).toBe(
+      'Studio "Sao Việt" đã ngừng hoạt động.',
+    );
+    expect(describeError(new Error('Plain failure'))).toBe('Đã có lỗi xảy ra.');
   });
 });
 

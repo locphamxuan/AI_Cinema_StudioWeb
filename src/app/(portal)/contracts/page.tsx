@@ -36,7 +36,7 @@ export default function ContractsPage() {
     <>
       <PageTitle
         title="Hợp đồng"
-        description="Điền giá và ký hợp đồng mẫu, hoặc đồng ý / đề xuất lại giá Admin đưa ra. Hợp đồng hoàn tất khi đủ hai chữ ký."
+        description="Tải hợp đồng mẫu đã có sẵn ngân sách, ký rồi tải lên (có thể đề xuất giá thấp hơn). Khi Admin đề xuất giá khác, Studio ký đồng ý hoặc đề xuất lại. Hợp đồng hoàn tất khi đủ hai chữ ký."
       />
       <Guarded load={() => Contracts()} />
     </>

@@ -1,7 +1,6 @@
 import { apiRequest, type FetchLike } from './http';
 import type {
   AuthSession,
-  OAuthTokenResponse,
   Contract,
   Delivery,
   MediaLinkSubmission,
@@ -29,7 +28,8 @@ export function portalApi(baseUrl: string, token: string, fetchImpl?: FetchLike)
   return {
     me: () => get<StudioProfile>('/studio-portal/me'),
     contracts: () => get<Contract[]>('/studio-portal/contracts'),
-    proposeCost: (contractId: string, costVnd: number, file: Blob) =>
+    /** Without a cost the studio signs at the budget ceiling printed on the contract. */
+    proposeCost: (contractId: string, costVnd: number | undefined, file: Blob) =>
       signed<Contract>(`/studio-portal/contracts/${id(contractId)}/propose`, file, costVnd),
     signContract: (contractId: string, file: Blob) =>
       signed<Contract>(`/studio-portal/contracts/${id(contractId)}/sign`, file),
@@ -55,47 +55,4 @@ export const authApi = (baseUrl: string, fetchImpl?: FetchLike) => ({
     apiRequest<AuthSession>(baseUrl, '/auth/refresh', { method: 'POST', json: { refreshToken }, fetchImpl }),
   logout: (refreshToken: string) =>
     apiRequest<void>(baseUrl, '/auth/logout', { method: 'POST', json: { refreshToken }, fetchImpl }),
-});
-
-export interface OAuthClientCredentials {
-  clientId: string;
-  clientSecret?: string;
-}
-
-const clientFields = ({ clientId, clientSecret }: OAuthClientCredentials): Record<string, string> =>
-  clientSecret ? { client_id: clientId, client_secret: clientSecret } : { client_id: clientId };
-
-/** Studio Web as an OAuth 2.0 client of AI Cinema (Authorization Code + PKCE), called from the server only. */
-export const oauthApi = (baseUrl: string, client: OAuthClientCredentials, fetchImpl?: FetchLike) => ({
-  exchangeCode: (code: string, redirectUri: string, codeVerifier: string) =>
-    apiRequest<OAuthTokenResponse>(baseUrl, '/oauth/token', {
-      method: 'POST',
-      urlencoded: {
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: redirectUri,
-        code_verifier: codeVerifier,
-        ...clientFields(client),
-      },
-      fetchImpl,
-    }),
-  refresh: (refreshToken: string) =>
-    apiRequest<OAuthTokenResponse>(baseUrl, '/oauth/token', {
-      method: 'POST',
-      urlencoded: { grant_type: 'refresh_token', refresh_token: refreshToken, ...clientFields(client) },
-      fetchImpl,
-    }),
-  revoke: (refreshToken: string) =>
-    apiRequest<unknown>(baseUrl, '/oauth/revoke', {
-      method: 'POST',
-      urlencoded: { token: refreshToken, token_type_hint: 'refresh_token', ...clientFields(client) },
-      fetchImpl,
-    }),
-});
-
-/** The OAuth answer in the shape the session cookies are written from. */
-export const sessionOfToken = (token: OAuthTokenResponse): AuthSession => ({
-  accessToken: token.access_token,
-  accessTokenExpiresIn: token.expires_in,
-  refreshToken: token.refresh_token,
 });

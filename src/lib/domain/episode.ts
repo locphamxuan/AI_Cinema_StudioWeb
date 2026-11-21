@@ -28,8 +28,8 @@ export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
   DRAFT: 'Nháp',
   ASSIGNED: 'Đang viết kịch bản',
   IN_PRODUCTION: 'Đang sản xuất',
-  COMPLETED: 'Hoàn thành',
-  UNDER_REVISION: 'Đang chỉnh sửa',
+  COMPLETED: 'Hoàn tất',
+  UNDER_REVISION: 'Đang sửa tập',
   CANCELLED: 'Đã huỷ',
 };
 

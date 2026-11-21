@@ -1,3 +1,4 @@
+import { inVietnamese } from './apiMessages';
 /** A failed call to the AI Cinema API, carrying its `{ error: { code, message, details } }` body. */
 export class ApiError extends Error {
   constructor(
@@ -88,11 +89,17 @@ export async function apiRequest<T>(baseUrl: string, path: string, request: ApiR
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
-/** A Vietnamese sentence for any error, keeping the API's own message and details so nothing is hidden. */
+/**
+ * A Vietnamese sentence for any error: the API's own message and details worded in Vietnamese, or what the status
+ * means when the API said nothing a studio can read (never its English, never a reason code).
+ */
 export function describeError(error: unknown): string {
-  if (!(error instanceof ApiError)) return error instanceof Error ? error.message : 'Đã có lỗi xảy ra.';
+  if (!(error instanceof ApiError)) return error instanceof Error ? inVietnamese(error.message, 'Đã có lỗi xảy ra.') : 'Đã có lỗi xảy ra.';
   if (error.status === 0) return error.message;
-  const prefix = STATUS_TEXT[error.status] ?? `Lỗi máy chủ (${error.status})`;
-  const parts = [error.message, ...error.details].filter((part) => part && part !== 'The request is invalid');
-  return parts.length ? `${prefix}: ${parts.join('; ')}` : `${prefix}.`;
+  const parts = [error.message, ...error.details]
+    .filter((part) => part && !part.startsWith('reason: '))
+    .map((part) => inVietnamese(part, ''))
+    .filter(Boolean);
+  if (parts.length) return [...new Set(parts)].join(' ');
+  return `${STATUS_TEXT[error.status] ?? `Lỗi máy chủ (${error.status})`}.`;
 }

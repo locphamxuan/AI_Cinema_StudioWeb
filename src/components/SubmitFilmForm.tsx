@@ -163,7 +163,7 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
         <p>
           Nhãn AI đề xuất: <strong>{LABEL_TYPES.find((item) => item.value === labelType)?.label ?? '-'}</strong>
         </p>
-        <p className="text-muted">Bản nộp mới sẽ thay bản trước để Reviewer duyệt; tập chuyển sang trạng thái đang xử lý video.</p>
+        <p className="text-muted">Bản nộp mới thành phiên bản mới để Reviewer duyệt (bản cũ vẫn được lưu); tập chuyển sang trạng thái Đang xử lý video.</p>
       </ConfirmDialog>
     </form>
   );

@@ -10,14 +10,14 @@ test('toggles light and dark themes cleanly with ThemeToggle', async ({ page }) 
   const light = {
     bg: await style(page, 'main', 'background-color'),
     alert: await style(page, 'main [role="alert"]', 'color'),
-    button: await style(page, 'button[type="submit"]', 'color'),
+    button: await style(page, 'button[type="submit"]', 'background-color'),
   };
   expect(light.bg).toBe('rgb(249, 250, 251)');
 
   await page.getByRole('button', { name: 'Chuyển đổi giao diện sáng / tối' }).click();
   await expect.poll(() => style(page, 'main', 'background-color')).toBe('rgb(9, 11, 16)');
   expect(await style(page, 'main [role="alert"]', 'color')).not.toBe(light.alert);
-  expect(await style(page, 'button[type="submit"]', 'color')).not.toBe(light.button);
+  await expect.poll(() => style(page, 'button[type="submit"]', 'background-color')).not.toBe(light.button);
 });
 
 test('keeps the chosen dark theme from the first paint after a reload', async ({ page }) => {

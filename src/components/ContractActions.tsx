@@ -3,28 +3,31 @@
 import { useActionState, useCallback, useRef, useState } from 'react';
 import { PenLine } from 'lucide-react';
 import { actOnContract, type ContractActionState } from '@/app/actions/contracts';
-import { checkSignedPdf, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
+import { checkSignedPdf, checkWithinBudget, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
 import { formatBytes, formatVnd } from '@/lib/format';
 import { ConfirmDialog } from './ConfirmDialog';
 import { BUTTON, BUTTON_GHOST, ErrorCard, INPUT, SuccessCard } from './ui';
 
 const SUBMIT_LABEL: Record<ContractAction, string> = {
-  propose: 'Gửi giá và ký',
+  propose: 'Gửi hợp đồng đã ký',
   sign: 'Đồng ý giá và ký',
   counter: 'Gửi đề xuất giá khác',
 };
 
 const CONFIRM_TITLE: Record<ContractAction, string> = {
-  propose: 'Gửi giá và ký hợp đồng?',
+  propose: 'Gửi hợp đồng Studio đã ký?',
   sign: 'Đồng ý giá Admin và ký hợp đồng?',
   counter: 'Gửi đề xuất giá khác?',
 };
 
 const CONFIRM_NOTE: Record<ContractAction, string> = {
-  propose: 'Sau khi gửi, Studio không sửa được vòng này; Admin sẽ ký đồng ý hoặc đề xuất giá khác.',
+  propose: 'Sau khi gửi, Studio không sửa được vòng này; Admin sẽ ký phần Bên A hoặc đề xuất giá khác.',
   sign: 'Hợp đồng sẽ đủ hai chữ ký và không thể huỷ trên Studio Web.',
   counter: 'Một vòng mới được mở với giá này; Admin sẽ ký đồng ý hoặc đề xuất lại.',
 };
+
+/** On the contract it was sent, the studio signs at the budget or asks for less. */
+type PriceMode = 'budget' | 'lower';
 
 function CostField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const parsed = value ? parseCostVnd(value) : null;
@@ -51,18 +54,24 @@ function CostField({ value, onChange }: { value: string; onChange: (value: strin
   );
 }
 
-/** The studio's move on a round waiting for it: fill in the cost (SENT), or agree / counter the Admin (ADMIN_COUNTERED). */
+/**
+ * The studio's move on a round waiting for it: upload its signed copy of the contract it was sent, at the budget
+ * or at a lower cost (SENT), or agree with / counter the Admin (ADMIN_COUNTERED).
+ */
 export function ContractActions({
   contractId,
   actions,
   adminCost,
+  budgetVnd,
 }: {
   contractId: string;
   actions: ContractAction[];
   adminCost: number | null;
+  budgetVnd: number;
 }) {
   const [state, formAction, pending] = useActionState<ContractActionState, FormData>(actOnContract, {});
   const [mode, setMode] = useState<ContractAction>(actions[0]);
+  const [priceMode, setPriceMode] = useState<PriceMode>('budget');
   const [cost, setCost] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -73,8 +82,9 @@ export function ContractActions({
   const closeConfirm = useCallback(() => setConfirming(false), []);
 
   if (state.done) return <SuccessCard message={state.done} />;
-  const needsCost = mode !== 'sign';
+  const needsCost = mode === 'counter' || (mode === 'propose' && priceMode === 'lower');
   const parsedCost = parseCostVnd(cost);
+  const signedCost = mode === 'sign' ? adminCost : mode === 'propose' && priceMode === 'budget' ? budgetVnd : null;
 
   /** Checks the form in the browser first (the 10 MB limit included), then asks for confirmation. */
   function review() {
@@ -83,6 +93,8 @@ export function ContractActions({
     const pdf = checkSignedPdf(file);
     if (!pdf.ok) return setProblem(pdf.message);
     if (needsCost && !parsedCost.ok) return setProblem(parsedCost.message);
+    const overBudget = needsCost && parsedCost.ok ? checkWithinBudget(parsedCost.value, budgetVnd) : null;
+    if (overBudget) return setProblem(overBudget);
     setProblem(null);
     setConfirming(true);
   }
@@ -105,6 +117,7 @@ export function ContractActions({
     <form ref={formRef} action={formAction} onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-background p-4 sm:p-5">
       <input type="hidden" name="contractId" value={contractId} />
       <input type="hidden" name="action" value={mode} />
+      <input type="hidden" name="priceMode" value={priceMode} />
       {actions.length > 1 && (
         <div className="flex flex-wrap gap-2" role="group" aria-label="Lựa chọn của Studio">
           {actions.map((action) => (
@@ -116,6 +129,21 @@ export function ContractActions({
               className={`${BUTTON_GHOST} text-xs aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-white dark:aria-pressed:text-slate-900`}
             >
               {action === 'sign' ? 'Đồng ý giá Admin' : 'Đề xuất giá khác'}
+            </button>
+          ))}
+        </div>
+      )}
+      {mode === 'propose' && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Giá Studio ký">
+          {(['budget', 'lower'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setPriceMode(option)}
+              aria-pressed={priceMode === option}
+              className={`${BUTTON_GHOST} text-xs aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-white dark:aria-pressed:text-slate-900`}
+            >
+              {option === 'budget' ? `Ký đúng ngân sách ${formatVnd(budgetVnd)}` : 'Đề xuất giá thấp hơn'}
             </button>
           ))}
         </div>
@@ -142,7 +170,7 @@ export function ContractActions({
           className={`${INPUT} file:mr-3 file:rounded-full file:border-0 file:bg-accent file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white dark:file:text-slate-900`}
         />
         <span className="block text-xs text-muted">
-          In điều khoản ở trên{needsCost ? ' kèm giá đã nhập' : ''}, ký và đóng dấu rồi tải bản PDF lên; hệ thống ghép với bản Admin đã ký.
+          Tải lên đúng hợp đồng đã tải về{needsCost ? ', sửa giá trị thành giá đã nhập' : ''}, có chữ ký và con dấu của Studio; file của dự án khác bị từ chối.
         </span>
       </label>
       <label className="flex items-start gap-2.5 text-sm cursor-pointer">
@@ -157,7 +185,7 @@ export function ContractActions({
       <ConfirmDialog open={confirming} title={CONFIRM_TITLE[mode]} confirmLabel={SUBMIT_LABEL[mode]} onConfirm={confirm} onCancel={closeConfirm}>
         <p>
           Giá sản xuất:{' '}
-          <strong className="tabular-nums">{needsCost ? (parsedCost.ok ? formatVnd(parsedCost.value) : '-') : formatVnd(adminCost)}</strong>
+          <strong className="tabular-nums">{needsCost ? (parsedCost.ok ? formatVnd(parsedCost.value) : '-') : formatVnd(signedCost)}</strong>
         </p>
         {file && (
           <p className="break-words">
