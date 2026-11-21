@@ -348,5 +348,10 @@
 ["scheduledAt must be in the future; omit it to publish now", "Thời điểm hẹn đăng phải ở tương lai; để trống nếu muốn đăng ngay."],
 ["section must be one of {}", "Mục tra cứu phải là một trong: {1}."],
 ["slug must be lowercase words separated by hyphens", "Đường dẫn chỉ gồm chữ thường, nối bằng dấu gạch ngang."],
-["studioPhone must be a phone number", "Số điện thoại của Studio không hợp lệ."]
+["studioPhone must be a phone number", "Số điện thoại của Studio không hợp lệ."],
+["{} must be a valid ISO 8601 date string", "Ngày không hợp lệ."],
+["{} must be an email", "Email không hợp lệ."],
+["{} must be longer than or equal to {} characters", "Thông tin quá ngắn: cần ít nhất {2} ký tự."],
+["{} must be shorter than or equal to {} characters", "Thông tin quá dài: tối đa {2} ký tự."],
+["{} should not be empty", "Hãy điền đủ thông tin bắt buộc."]
 ]
