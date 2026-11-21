@@ -1,7 +1,7 @@
 import type { Contract, ContractStatus } from '@/lib/api/types';
 
 export const CONTRACT_STATUS_LABEL: Record<ContractStatus, string> = {
-  SENT: 'Chờ Studio báo giá',
+  SENT: 'Chờ Studio ký',
   STUDIO_SIGNED: 'Studio đã ký – chờ Admin',
   ADMIN_COUNTERED: 'Admin đề xuất giá – chờ Studio',
   SIGNED: 'Đã ký đủ',
@@ -18,7 +18,7 @@ export const CONTRACT_STATUS_TONE: Record<ContractStatus, ContractTone> = {
   SUPERSEDED: 'muted',
 };
 
-/** What the studio may do on a round: fill in the cost and sign the template; or agree with / counter the Admin. */
+/** What the studio may do on a round: sign the contract it was sent; or agree with / counter the Admin. */
 export type ContractAction = 'propose' | 'sign' | 'counter';
 
 export function contractActions(status: ContractStatus): ContractAction[] {
@@ -61,6 +61,12 @@ export function checkSignedPdf(value: FormDataEntryValue | null): PdfCheck {
   if (!isPdf) return { ok: false, message: 'Hợp đồng đã ký phải là file PDF.' };
   if (value.size > CONTRACT_PDF_MAX_BYTES) return { ok: false, message: 'File PDF tối đa 10 MB.' };
   return { ok: true, file: value };
+}
+
+/** A quote above the budget ceiling is refused by the API too; saying it here spares a round trip. */
+export function checkWithinBudget(cost: number, budgetVnd: number): string | null {
+  if (cost <= budgetVnd) return null;
+  return `Giá đề xuất vượt ngân sách trần ${new Intl.NumberFormat('vi-VN').format(budgetVnd)} VND.`;
 }
 
 export const DOCUMENT_LABEL: Record<'ADMIN' | 'STUDIO' | 'FINAL', string> = {

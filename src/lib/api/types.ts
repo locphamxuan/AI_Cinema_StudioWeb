@@ -12,17 +12,7 @@ export interface AuthSession {
   accessToken: string;
   accessTokenExpiresIn: number;
   refreshToken: string;
-  /** Absent on an OAuth session: the `studio:portal` scope is only ever granted to a STUDIO account. */
   user?: AuthUser;
-}
-
-/** RFC 6749 §5.1, as AI Cinema's /oauth/token answers it. */
-export interface OAuthTokenResponse {
-  access_token: string;
-  token_type: 'Bearer';
-  expires_in: number;
-  refresh_token: string;
-  scope: string;
 }
 
 export type ContractDocumentSide = 'ADMIN' | 'STUDIO' | 'FINAL';
@@ -59,6 +49,8 @@ export interface Contract {
   round: number;
   previousId: string | null;
   costVnd: number | null;
+  /** Budget ceiling of the round while open (its value until a side proposes less), the signed cost once closed. */
+  budgetVnd: number;
   proposedBy: 'ADMIN' | 'STUDIO' | null;
   status: ContractStatus;
   terms: string;

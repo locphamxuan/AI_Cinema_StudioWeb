@@ -16,6 +16,7 @@ vi.mock('@/app/actions/auth', () => ({ login: vi.fn(async () => ({})), logout: v
 const submitFilm = vi.fn();
 vi.mock('@/lib/api/submit-film', () => ({ submitFilm: (...args: unknown[]) => submitFilm(...args) }));
 
+import LoginPage from '@/app/login/page';
 import { LoginForm } from '@/components/LoginForm';
 import { PortalHeader } from '@/components/PortalHeader';
 import { SubmitFilmForm } from '@/components/SubmitFilmForm';
@@ -35,6 +36,26 @@ describe('LoginForm', () => {
     render(<LoginForm notice="Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại." />);
     expect(screen.getByRole('alert')).toHaveTextContent('Phiên đăng nhập đã hết hạn');
     expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeEnabled();
+  });
+});
+
+describe('LoginPage', () => {
+  const page = async (search: { expired?: string }) =>
+    render(<ThemeProvider>{await LoginPage({ searchParams: Promise.resolve(search) })}</ThemeProvider>);
+
+  it('logs the studio in with its email and password on this page, with no other way out', async () => {
+    await page({});
+    expect(screen.getByRole('heading', { name: 'Studio Web', level: 1 })).toBeInTheDocument();
+    expect(screen.getByLabelText('Email')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mật khẩu')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /AI Cinema/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Studio Web' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('says when the session ended', async () => {
+    await page({ expired: '1' });
+    expect(screen.getByRole('alert')).toHaveTextContent('Phiên đăng nhập đã hết hạn');
   });
 });
 
@@ -118,7 +139,7 @@ describe('SubmitFilmForm upload', () => {
     expect(screen.getByText('Đã chọn tap.webm (1 B).')).toBeInTheDocument();
     await fillDisclosure();
     await userEvent.click(screen.getByRole('button', { name: /Nộp phim cho Reviewer/ }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Tệp phim phải là MP4 hoặc MOV.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Tệp phim phải là MP4, M4V hoặc MOV.');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
@@ -130,8 +151,8 @@ describe('Guarded', () => {
   });
 
   it('shows an API error instead of crashing the page', async () => {
-    render(await Guarded({ load: async () => Promise.reject(new ApiError(404, 'NOT_FOUND', 'Project not found')) }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Không tìm thấy dữ liệu: Project not found');
+    render(await Guarded({ load: async () => Promise.reject(new ApiError(404, 'NOT_FOUND', 'Movie project not found')) }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Không tìm thấy dự án phim.');
   });
 
   it('lets a redirect through', async () => {

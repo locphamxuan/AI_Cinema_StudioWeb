@@ -5,6 +5,7 @@ import { RetryDeliveryButton } from './RetryDeliveryButton';
 import { canRetry, canSubmit, EPISODE_STATUS_LABEL, INGEST_STATUS_LABEL } from '@/lib/domain/episode';
 import { daysUntil, formatDate, formatDateTime, formatDuration } from '@/lib/format';
 import type { EpisodeStatus, PortalEpisode } from '@/lib/api/types';
+import { inVietnamese } from '@/lib/api/apiMessages';
 
 const TONE: Partial<Record<EpisodeStatus, Tone>> = {
   AWAITING_MEDIA: 'action',
@@ -49,7 +50,7 @@ export function EpisodeCard({ projectId, episode, contractSigned }: { projectId:
             Bản nộp mới nhất: <strong>phiên bản {delivery.version}</strong> · {INGEST_STATUS_LABEL[delivery.ingestStatus] ?? delivery.ingestStatus} ·{' '}
             {formatDateTime(delivery.createdAt)}
           </p>
-          {delivery.failureReason && <p className="mt-1 text-red-600 dark:text-red-300">Lỗi xử lý: {delivery.failureReason}</p>}
+          {delivery.failureReason && <p className="mt-1 text-red-600 dark:text-red-300">Lỗi xử lý: {inVietnamese(delivery.failureReason, 'Xử lý video không thành công. Hãy xử lý lại hoặc nộp bản khác.')}</p>}
           {canRetry(delivery) && <RetryDeliveryButton mediaAssetId={delivery.id} version={delivery.version} />}
         </div>
       ) : (

@@ -74,8 +74,22 @@ test('counters the Admin with another cost, which opens a new round', async ({ p
   await expect(card.getByText('Studio đã ký – chờ Admin')).toBeVisible();
 });
 
-test('fills in the cost of a template just sent to the studio', async ({ page }) => {
+test('signs the contract just received at its budget, after downloading it', async ({ page }) => {
   const card = project(page, 'Mùa hạ cuối');
+  await expect(card.getByText('Theo ngân sách của AI Cinema')).toBeVisible();
+  const download = page.waitForEvent('download');
+  await card.getByRole('link', { name: 'Tải hợp đồng chưa ký (PDF)' }).click();
+  expect((await download).suggestedFilename()).toMatch(/^hop-dong-.+\.pdf$/);
+  await agree(card);
+  await card.getByRole('button', { name: 'Gửi hợp đồng đã ký' }).click();
+  await expect(page.getByRole('dialog')).toContainText('200.000.000 VND');
+  await confirmSign(page, 'Gửi hợp đồng đã ký');
+  await expect(card.getByText('Studio đã ký – chờ Admin')).toBeVisible();
+});
+
+test('proposes a lower cost on the contract just received', async ({ page }) => {
+  const card = project(page, 'Mùa hạ cuối');
+  await card.getByRole('button', { name: 'Đề xuất giá thấp hơn' }).click();
   await card.getByPlaceholder('Ví dụ: 170.000.000').fill('1500');
   await expect(card.getByText('Giá phải là bội số của 1.000 VND.')).toBeVisible();
   await agree(card);
@@ -83,6 +97,6 @@ test('fills in the cost of a template just sent to the studio', async ({ page })
   // Enter in the cost field must open the confirmation, not sign straight away.
   await card.getByPlaceholder('Ví dụ: 170.000.000').press('Enter');
   await expect(page.getByRole('dialog')).toContainText('120.000.000 VND');
-  await confirmSign(page, 'Gửi giá và ký');
+  await confirmSign(page, 'Gửi hợp đồng đã ký');
   await expect(card.getByText('Studio đã ký – chờ Admin')).toBeVisible();
 });
