@@ -40,7 +40,7 @@ async function Projects() {
                 )}
                 {project.handedOffAt && (
                   <span className="inline-flex items-center gap-1">
-                    <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" /> Bàn giao {formatDateTime(project.handedOffAt)}
+                    <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" /> Nhận việc {formatDateTime(project.handedOffAt)}
                   </span>
                 )}
               </div>
@@ -60,7 +60,7 @@ async function Projects() {
 export default function ProjectsPage() {
   return (
     <>
-      <PageTitle title="Dự án" description="Dự án AI Cinema đã gửi hợp đồng cho Studio, và dự án đã bàn giao để Studio sản xuất." />
+      <PageTitle title="Dự án" description="Dự án AI Cinema đã gửi hợp đồng cho Studio, và dự án Studio đã được giao để sản xuất." />
       <Guarded load={() => Projects()} />
     </>
   );

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { EpisodeCard } from '@/components/EpisodeCard';
+import { PosterUpload } from '@/components/PosterUpload';
 import { Badge, CARD, EmptyNote, ErrorCard, Facts, Guarded, PageTitle } from '@/components/ui';
 import { CONTRACT_STATUS_LABEL, CONTRACT_STATUS_TONE, hasSignedContract } from '@/lib/domain/contract';
 import { PROJECT_STATUS_LABEL } from '@/lib/domain/episode';
@@ -28,7 +29,7 @@ async function Project({ projectId }: { projectId: string }) {
               ['Tóm tắt', project.synopsis ?? '-'],
               ['Độ tuổi', project.ageRating ?? '-'],
               ['Ngôn ngữ', project.defaultLanguage ?? '-'],
-              ['Bàn giao', project.handedOffAt ? formatDateTime(project.handedOffAt) : 'Chưa bàn giao'],
+              ['Nhận việc', project.handedOffAt ? formatDateTime(project.handedOffAt) : 'Chưa giao việc'],
             ]}
           />
         </section>
@@ -52,6 +53,7 @@ async function Project({ projectId }: { projectId: string }) {
           )}
         </section>
       </div>
+      <PosterUpload projectId={project.id} poster={project.studioPoster ?? null} />
       <section className={`${CARD} p-6`}>
         <h2 className="text-base font-bold">Kịch bản Final</h2>
         {project.finalScript ? (
