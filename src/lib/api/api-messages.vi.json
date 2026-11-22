@@ -260,6 +260,7 @@
 ["The signed contract PDF must be at most {} bytes", "Bản PDF hợp đồng đã ký tối đa {1} byte."],
 ["The streaming session is no longer active", "Phiên xem không còn hoạt động."],
 ["The studio does not exist", "Studio không tồn tại."],
+["The studio has not sent a poster yet", "Studio chưa nộp poster."],
 ["The studio must commit to no misleading real-person or real-event likeness (BR-41)", "Studio phải cam kết không tạo hình ảnh gây hiểu nhầm về người hoặc sự kiện có thật."],
 ["The studio must commit to using no copyrighted material (BR-41)", "Studio phải cam kết không dùng tài liệu có bản quyền của bên thứ ba."],
 ["The studio still works on a project; change the studio of these projects first", "Studio vẫn đang làm dự án; hãy đổi Studio của các dự án đó trước."],
