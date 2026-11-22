@@ -111,6 +111,12 @@ export interface PortalEpisode {
   latestDelivery: Delivery | null;
 }
 
+/** The poster image the studio sent for the movie. */
+export interface StudioPoster {
+  fileName: string;
+  uploadedAt: string;
+}
+
 export interface ProjectDetail {
   id: string;
   status: ProjectStatus;
@@ -121,6 +127,7 @@ export interface ProjectDetail {
   ageRating: string | null;
   defaultLanguage: string | null;
   finalScript: { version: number; content: string } | null;
+  studioPoster: StudioPoster | null;
   contracts: Contract[];
   episodes: PortalEpisode[];
 }

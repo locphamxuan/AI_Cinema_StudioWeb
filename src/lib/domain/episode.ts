@@ -1,7 +1,7 @@
 import type { Delivery, EpisodeStatus, IngestStatus, ProjectStatus } from '@/lib/api/types';
 
 export const EPISODE_STATUS_LABEL: Record<EpisodeStatus, string> = {
-  DRAFT: 'Chưa bàn giao',
+  DRAFT: 'Chưa giao việc',
   AWAITING_MEDIA: 'Chờ Studio nộp phim',
   PROCESSING: 'Đang xử lý video',
   IN_REVIEW: 'Reviewer đang duyệt',
