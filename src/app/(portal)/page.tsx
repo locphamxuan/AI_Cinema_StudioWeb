@@ -130,7 +130,7 @@ async function Overview() {
             <p className="text-xs opacity-85 sm:text-sm">
               {heroProject.episodeCount} tập
               {heroProject.contract?.costVnd != null ? ` • Giá trị hợp đồng: ${formatVnd(heroProject.contract.costVnd)}` : ''}
-              {heroProject.handedOffAt ? ` • Bàn giao: ${formatDateTime(heroProject.handedOffAt)}` : ''}
+              {heroProject.handedOffAt ? ` • Nhận việc: ${formatDateTime(heroProject.handedOffAt)}` : ''}
             </p>
           </div>
           <Link

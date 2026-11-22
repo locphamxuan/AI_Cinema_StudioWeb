@@ -29,7 +29,7 @@ async function Project({ projectId }: { projectId: string }) {
               ['Tóm tắt', project.synopsis ?? '-'],
               ['Độ tuổi', project.ageRating ?? '-'],
               ['Ngôn ngữ', project.defaultLanguage ?? '-'],
-              ['Bàn giao', project.handedOffAt ? formatDateTime(project.handedOffAt) : 'Chưa bàn giao'],
+              ['Nhận việc', project.handedOffAt ? formatDateTime(project.handedOffAt) : 'Chưa giao việc'],
             ]}
           />
         </section>

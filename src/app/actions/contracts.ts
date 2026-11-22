@@ -13,7 +13,7 @@ export interface ContractActionState {
 
 const DONE: Record<ContractAction, string> = {
   propose: 'Đã gửi hợp đồng Studio đã ký. Chờ Admin ký.',
-  sign: 'Đã ký hợp đồng. Hợp đồng đã đủ hai chữ ký, dự án được bàn giao cho Studio.',
+  sign: 'Đã ký hợp đồng. Hợp đồng đã đủ hai chữ ký, dự án đã được giao cho Studio.',
   counter: 'Đã gửi đề xuất giá mới kèm chữ ký Studio. Chờ Admin phản hồi.',
 };
 
