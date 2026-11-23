@@ -22,7 +22,7 @@ function toLogin(request: NextRequest): NextResponse {
 }
 
 /**
- * Downloads a contract PDF of the studio (the unsigned contract, Admin-signed, studio-signed or the merged FINAL copy) with the
+ * Downloads a contract PDF of the studio (the unsigned contract, Admin-signed, studio-signed or the FINAL copy signed by both) with the
  * session's token, which the browser never sees; the file is streamed through as the API sends it.
  */
 export async function GET(request: NextRequest, context: { params: Promise<{ contractId: string; side: string }> }) {

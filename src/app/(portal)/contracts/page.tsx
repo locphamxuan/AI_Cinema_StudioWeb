@@ -1,44 +1,91 @@
-import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 import { ContractRound } from '@/components/ContractRound';
-import { BUTTON_GHOST, CARD, EmptyNote, Guarded, PageTitle } from '@/components/ui';
-import { groupByProject } from '@/lib/domain/contract';
-import { loadContracts } from '@/lib/session/portal-data';
+import { ContractTabs, Pagination } from '@/components/ContractTabs';
+import { ProfileNotice } from '@/components/ProfileNotice';
+import { QuoteHistory } from '@/components/QuoteHistory';
+import { EmptyNote, Guarded, PageTitle } from '@/components/ui';
+import { groupByProject, paginate, tabOfProject, toContractTab, type ContractTab } from '@/lib/domain/contract';
+import { loadContracts, loadProfile } from '@/lib/session/portal-data';
 
 export const metadata = { title: 'Hợp đồng - Studio Web' };
 
-async function Contracts() {
-  const contracts = await loadContracts();
-  if (!contracts.length) return <EmptyNote>AI Cinema chưa gửi hợp đồng nào cho Studio.</EmptyNote>;
+/** Cards per page: a project to sign takes room for its form, the others are compact. */
+const PAGE_SIZE: Record<ContractTab, number> = { todo: 3, waiting: 6, signed: 6, history: 10 };
+
+const EMPTY: Record<ContractTab, string> = {
+  todo: 'Không có hợp đồng nào chờ Studio ký.',
+  waiting: 'Không có hợp đồng nào đang chờ Admin ký.',
+  signed: 'Chưa có hợp đồng nào đủ chữ ký hai bên.',
+  history: 'AI Cinema chưa gửi hợp đồng nào cho Studio.',
+};
+
+async function Contracts({ tab, page }: { tab: ContractTab; page: number }) {
+  const [contracts, profile] = await Promise.all([loadContracts(), loadProfile()]);
+  const groups = groupByProject(contracts);
+  const byTab = (key: ContractTab) => groups.filter((group) => tabOfProject(group) === key);
+  const history = [...contracts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const counts = {
+    todo: byTab('todo').length,
+    waiting: byTab('waiting').length,
+    signed: byTab('signed').length,
+    history: history.length,
+  };
+
+  let content: React.ReactNode;
+  if (tab === 'history') {
+    const shown = paginate(history, page, PAGE_SIZE.history);
+    content = shown.items.length ? (
+      <>
+        <QuoteHistory rounds={shown.items} />
+        <Pagination tab={tab} page={shown.page} pages={shown.pages} />
+      </>
+    ) : (
+      <EmptyNote>{EMPTY.history}</EmptyNote>
+    );
+  } else {
+    const shown = paginate(byTab(tab), page, PAGE_SIZE[tab]);
+    content = shown.items.length ? (
+      <>
+        <div className={tab === 'todo' ? 'grid gap-4' : 'grid gap-4 lg:grid-cols-2'}>
+          {shown.items.map((group) => (
+            <ContractRound
+              key={group.projectId}
+              group={group}
+              withActions={tab === 'todo'}
+              missingProfile={profile.missing}
+            />
+          ))}
+        </div>
+        <Pagination tab={tab} page={shown.page} pages={shown.pages} />
+      </>
+    ) : (
+      <EmptyNote>{EMPTY[tab]}</EmptyNote>
+    );
+  }
+
   return (
-    <div className="space-y-5">
-      {groupByProject(contracts).map(({ projectId, title, rounds }) => (
-        <section key={projectId} className={`${CARD} overflow-hidden transition-shadow hover:shadow-md`}>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
-            <h2 className="text-base font-bold">{title}</h2>
-            <Link href={`/projects/${projectId}`} className={`${BUTTON_GHOST} px-3.5 py-1.5 text-xs`}>
-              Xem dự án <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-          </div>
-          <div className="divide-y divide-border">
-            {rounds.map((contract, index) => (
-              <ContractRound key={contract.id} contract={contract} withActions={index === 0} />
-            ))}
-          </div>
-        </section>
-      ))}
+    <div className="space-y-4">
+      {!profile.complete && counts.todo > 0 && tab !== 'todo' && <ProfileNotice missing={profile.missing} />}
+      <ContractTabs active={tab} counts={counts} />
+      {content}
     </div>
   );
 }
 
-export default function ContractsPage() {
+export default async function ContractsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; page?: string }>;
+}) {
+  const params = await searchParams;
+  const tab = toContractTab(params.tab);
+  const page = Number(params.page ?? 1);
   return (
     <>
       <PageTitle
         title="Hợp đồng"
-        description="Tải hợp đồng mẫu đã có sẵn ngân sách, ký rồi tải lên (có thể đề xuất giá thấp hơn). Khi Admin đề xuất giá khác, Studio ký đồng ý hoặc đề xuất lại. Hợp đồng hoàn tất khi đủ hai chữ ký."
+        description="Tải hợp đồng đã điền sẵn ngân sách, ký bằng ảnh chữ ký (có thể đề xuất giá thấp hơn). Hợp đồng hoàn tất khi đủ chữ ký hai bên."
       />
-      <Guarded load={() => Contracts()} />
+      <Guarded load={() => Contracts({ tab, page })} />
     </>
   );
 }
