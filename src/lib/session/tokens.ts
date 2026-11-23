@@ -2,12 +2,17 @@ import { ApiError } from '@/lib/api/http';
 import { authApi } from '@/lib/api/portal';
 import type { AuthSession, AuthUser } from '@/lib/api/types';
 
-/** httpOnly cookies of a studio session: the browser holds them, page scripts never read them. */
+/** Cookies of a studio session: the tokens are httpOnly, the browser holds them and page scripts never read them. */
 export const COOKIE = {
   access: 'sw_access',
   refresh: 'sw_refresh',
   /** Epoch milliseconds when the access token expires, so the proxy refreshes it in time. */
   expires: 'sw_expires',
+  /**
+   * Id of the signed-in account, no secret: the only cookie page scripts read. All windows of a browser share the
+   * session cookies, so a window whose account was replaced by a login in another one notices it (SessionWatcher).
+   */
+  account: 'sw_account',
 } as const;
 
 const STUDIO_ROLE = 'STUDIO';
@@ -21,16 +26,18 @@ const EXPIRY_SKEW_MS = 60_000;
 export interface CookieWrite {
   name: string;
   value: string;
-  options: { httpOnly: true; secure: boolean; sameSite: 'lax'; path: '/'; maxAge: number };
+  options: { httpOnly: boolean; secure: boolean; sameSite: 'lax'; path: '/'; maxAge: number };
 }
 
 export function sessionCookies(session: AuthSession, secure: boolean, now = Date.now()): CookieWrite[] {
-  const options = (maxAge: number) => ({ httpOnly: true as const, secure, sameSite: 'lax' as const, path: '/' as const, maxAge });
+  const options = (maxAge: number, httpOnly = true) => ({ httpOnly, secure, sameSite: 'lax' as const, path: '/' as const, maxAge });
   const ttl = Math.max(1, Math.floor(session.accessTokenExpiresIn));
+  const account = session.user?.id;
   return [
     { name: COOKIE.access, value: session.accessToken, options: options(ttl) },
     { name: COOKIE.expires, value: String(now + ttl * 1000), options: options(ttl) },
     { name: COOKIE.refresh, value: session.refreshToken, options: options(REFRESH_MAX_AGE_SECONDS) },
+    ...(account ? [{ name: COOKIE.account, value: account, options: options(REFRESH_MAX_AGE_SECONDS, false) }] : []),
   ];
 }
 

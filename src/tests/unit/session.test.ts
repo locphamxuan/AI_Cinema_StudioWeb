@@ -18,8 +18,11 @@ describe('session cookies', () => {
       [COOKIE.access, 'access-2', 1800],
       [COOKIE.expires, String(1_000 + 1_800_000), 1800],
       [COOKIE.refresh, 'refresh-2', 30 * 24 * 3600],
+      [COOKIE.account, 'u', 30 * 24 * 3600],
     ]);
-    expect(cookies.every((c) => c.options.httpOnly && c.options.secure && c.options.sameSite === 'lax')).toBe(true);
+    expect(cookies.every((c) => c.options.secure && c.options.sameSite === 'lax')).toBe(true);
+    // Only the account id, no secret, is readable by page scripts (so a window notices another login).
+    expect(cookies.filter((c) => !c.options.httpOnly).map((c) => c.name)).toEqual([COOKIE.account]);
   });
 
   it('refreshes a missing or almost expired access token only', () => {
