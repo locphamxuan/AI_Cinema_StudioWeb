@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Clapperboard, FileSignature, Film, LayoutDashboard, LogOut, ScrollText } from 'lucide-react';
 import { logout } from '@/app/actions/auth';
+import { PendingButton } from './PendingButton';
 import { ThemeToggle } from './ThemeToggle';
 
 export interface PortalSidebarProps {
@@ -108,14 +109,13 @@ export function PortalHeader({
           <span className="truncate text-xs text-muted">{contactLabel || 'Đối tác sản xuất'}</span>
         </span>
         <form action={logout}>
-          <button
-            type="submit"
+          <PendingButton
             aria-label="Đăng xuất"
             title="Đăng xuất"
             className="flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-card hover:text-foreground"
           >
             <LogOut className="size-4" aria-hidden="true" />
-          </button>
+          </PendingButton>
         </form>
       </div>
     </aside>

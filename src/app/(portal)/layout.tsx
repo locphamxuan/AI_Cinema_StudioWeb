@@ -4,11 +4,11 @@ import { PortalHeader } from '@/components/PortalHeader';
 import { SessionWatcher } from '@/components/SessionWatcher';
 import { COOKIE } from '@/lib/session/tokens';
 import { needsStudio } from '@/lib/domain/contract';
-import { loadContracts, loadNotifications, loadProfile, loadProjects, loadStudio } from '@/lib/session/portal-data';
+import { loadContracts, loadProfile, loadProjects, loadStudio, loadUnreadCount } from '@/lib/session/portal-data';
 
 /** Every screen after login: the inset sidebar of the template, and the page on a raised card beside it. */
 export default async function PortalLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [studio, contracts, projects, notifications, profile] = await Promise.all([
+  const [studio, contracts, projects, unread, profile] = await Promise.all([
     loadStudio().catch((error: unknown) => {
       unstable_rethrow(error);
       return null;
@@ -21,9 +21,9 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
       unstable_rethrow(error);
       return [];
     }),
-    loadNotifications().catch((error: unknown) => {
+    loadUnreadCount().catch((error: unknown) => {
       unstable_rethrow(error);
-      return { data: [] };
+      return { unread: 0 };
     }),
     loadProfile().catch((error: unknown) => {
       unstable_rethrow(error);
@@ -36,7 +36,6 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
   const contactLabel = studio?.contactName ?? studio?.email ?? null;
   const waitingContracts = contracts.filter(needsStudio).length;
   const producingProjects = projects.filter((p) => p.status === 'IN_PRODUCTION').length;
-  const unreadNotifications = notifications.data.filter((n) => !n.readAt).length;
 
   return (
     <div className="flex min-h-screen flex-col bg-surface text-foreground md:flex-row">
@@ -51,7 +50,7 @@ export default async function PortalLayout({ children }: Readonly<{ children: Re
         contactLabel={contactLabel}
         waitingContracts={waitingContracts}
         producingProjects={producingProjects}
-        unreadNotifications={unreadNotifications}
+        unreadNotifications={unread.unread}
         missingProfileFields={profile?.missing.length ?? 0}
       />
       <div className="min-w-0 flex-1 p-2 md:pl-0">

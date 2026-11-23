@@ -45,7 +45,10 @@ export function portalApi(baseUrl: string, token: string, fetchImpl?: FetchLike)
     submitLink: (episodeId: string, body: MediaLinkSubmission) =>
       post<unknown>(`/studio-portal/episodes/${id(episodeId)}/media`, body),
     retryDelivery: (mediaAssetId: string) => post<Delivery>(`/studio-portal/media-assets/${id(mediaAssetId)}/retry`),
-    notifications: (limit = 20) => get<Paginated<PortalNotification>>(`/notifications?limit=${limit}&page=1`),
+    notifications: (limit = 20, page = 1) => get<Paginated<PortalNotification>>(`/notifications?limit=${limit}&page=${page}`),
+    unreadCount: () => get<{ unread: number }>('/notifications/unread-count'),
+    markRead: (notificationId: string) =>
+      apiRequest<void>(baseUrl, `/notifications/${id(notificationId)}/read`, { method: 'PATCH', token, fetchImpl }),
     markAllRead: () => apiRequest<{ updated: number }>(baseUrl, '/notifications/read-all', { method: 'PATCH', token, fetchImpl }),
   };
 }
