@@ -44,6 +44,13 @@ const VALUES: Record<string, string> = {
   OPEN: 'Đang mở',
   RESOLVED: 'Đã xử lý',
   DISMISSED: 'Đã bỏ qua',
+  // Fields of the studio legal profile, listed by "The studio legal profile is incomplete (…)".
+  address: 'địa chỉ trụ sở',
+  taxCode: 'mã số thuế',
+  bankAccount: 'số tài khoản',
+  bankName: 'ngân hàng',
+  representativeTitle: 'chức vụ người đại diện',
+  contactName: 'người đại diện (Admin nhập)',
   'add a season': 'thêm mùa phim',
   'add an episode': 'thêm tập',
   'add idea files': 'thêm tệp ý tưởng',
