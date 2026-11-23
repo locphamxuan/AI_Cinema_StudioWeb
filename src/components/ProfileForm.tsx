@@ -6,12 +6,13 @@ import type { LegalProfileInput, StudioLegalProfile } from '@/lib/api/types';
 import { LEGAL_FIELD_LABEL } from '@/lib/domain/legal-profile';
 import { BUTTON, ErrorCard, INPUT, SuccessCard } from './ui';
 
-const FIELDS: { name: keyof LegalProfileInput; hint: string; placeholder: string; inputMode?: 'numeric' }[] = [
-  { name: 'address', hint: 'Như trên giấy chứng nhận đăng ký doanh nghiệp.', placeholder: 'Số nhà, đường, phường, quận, tỉnh/thành' },
-  { name: 'taxCode', hint: '10 chữ số, hoặc 10 chữ số, dấu "-" và 3 chữ số với chi nhánh.', placeholder: '0312345678', inputMode: 'numeric' },
-  { name: 'bankAccount', hint: 'Tài khoản nhận thanh toán, 6 đến 19 chữ số.', placeholder: '0123456789', inputMode: 'numeric' },
-  { name: 'bankName', hint: 'Tên ngân hàng và chi nhánh.', placeholder: 'Ngân hàng TMCP Á Châu, CN Quận 1' },
-  { name: 'representativeTitle', hint: 'Chức vụ của người ký hợp đồng.', placeholder: 'Giám đốc' },
+/** `maxLength` as the API's limits (bankAccount leaves room for the spaces and dots that group its digits). */
+const FIELDS: { name: keyof LegalProfileInput; hint: string; placeholder: string; maxLength: number; inputMode?: 'numeric' }[] = [
+  { name: 'address', hint: 'Như trên giấy chứng nhận đăng ký doanh nghiệp.', placeholder: 'Số nhà, đường, phường, quận, tỉnh/thành', maxLength: 500 },
+  { name: 'taxCode', hint: '10 chữ số, hoặc 10 chữ số, dấu "-" và 3 chữ số với chi nhánh.', placeholder: '0312345678', maxLength: 14, inputMode: 'numeric' },
+  { name: 'bankAccount', hint: 'Tài khoản nhận thanh toán, 6 đến 19 chữ số.', placeholder: '0123456789', maxLength: 30, inputMode: 'numeric' },
+  { name: 'bankName', hint: 'Tên ngân hàng và chi nhánh.', placeholder: 'Ngân hàng TMCP Á Châu, CN Quận 1', maxLength: 255 },
+  { name: 'representativeTitle', hint: 'Chức vụ của người ký hợp đồng.', placeholder: 'Giám đốc', maxLength: 100 },
 ];
 
 /** The studio fills in its own Bên B; checked here and again by the API. */
@@ -23,7 +24,7 @@ export function ProfileForm({ profile }: { profile: StudioLegalProfile }) {
       {state.done && <SuccessCard message={state.done} />}
       {state.error && <ErrorCard message={state.error} />}
       <div className="grid gap-4 md:grid-cols-2">
-        {FIELDS.map(({ name, hint, placeholder, inputMode }) => {
+        {FIELDS.map(({ name, hint, placeholder, maxLength, inputMode }) => {
           const error = state.errors?.[name];
           return (
             <label key={name} className={`block space-y-1.5 text-sm ${name === 'address' ? 'md:col-span-2' : ''}`}>
@@ -33,6 +34,7 @@ export function ProfileForm({ profile }: { profile: StudioLegalProfile }) {
                 name={name}
                 required
                 inputMode={inputMode}
+                maxLength={maxLength}
                 defaultValue={value(name)}
                 placeholder={placeholder}
                 aria-invalid={error ? true : undefined}
