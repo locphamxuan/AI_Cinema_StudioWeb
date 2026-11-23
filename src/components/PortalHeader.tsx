@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Clapperboard, FileSignature, Film, LayoutDashboard, LogOut } from 'lucide-react';
+import { Bell, Clapperboard, FileSignature, Film, LayoutDashboard, LogOut, ScrollText } from 'lucide-react';
 import { logout } from '@/app/actions/auth';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -12,6 +12,8 @@ export interface PortalSidebarProps {
   waitingContracts?: number;
   producingProjects?: number;
   unreadNotifications?: number;
+  /** Fields of the legal profile still empty: signing is blocked until it is 0. */
+  missingProfileFields?: number;
 }
 
 const isActive = (pathname: string, href: string) =>
@@ -30,6 +32,7 @@ export function PortalHeader({
   waitingContracts = 0,
   producingProjects = 0,
   unreadNotifications = 0,
+  missingProfileFields = 0,
 }: PortalSidebarProps) {
   const pathname = usePathname();
 
@@ -44,7 +47,10 @@ export function PortalHeader({
     },
     {
       label: 'Tài khoản',
-      items: [{ href: '/#notifications', label: 'Thông báo', ariaLabel: 'Thông báo', icon: Bell, badge: unreadNotifications, anchor: true }],
+      items: [
+        { href: '/profile', label: 'Hồ sơ pháp lý', ariaLabel: 'Hồ sơ pháp lý', icon: ScrollText, badge: missingProfileFields },
+        { href: '/#notifications', label: 'Thông báo', ariaLabel: 'Thông báo', icon: Bell, badge: unreadNotifications, anchor: true },
+      ],
     },
   ];
 

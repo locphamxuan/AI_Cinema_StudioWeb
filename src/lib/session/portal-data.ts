@@ -6,6 +6,7 @@ import { pagePortal } from './server';
  * without this the overview called each endpoint twice.
  */
 export const loadStudio = cache(async () => (await pagePortal()).me());
+export const loadProfile = cache(async () => (await pagePortal()).profile());
 export const loadContracts = cache(async () => (await pagePortal()).contracts());
 export const loadProjects = cache(async () => (await pagePortal()).projects());
 export const loadNotifications = cache(async () => (await pagePortal()).notifications(20));
