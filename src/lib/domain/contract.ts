@@ -1,3 +1,4 @@
+import { ApiError } from '@/lib/api/http';
 import type { Contract, ContractStatus } from '@/lib/api/types';
 
 export const CONTRACT_STATUS_LABEL: Record<ContractStatus, string> = {
@@ -52,6 +53,8 @@ export const SIGNATURE_MAX_BYTES = 2 * 1024 * 1024;
 export const SIGNATURE_MIN_SIZE = { width: 150, height: 50 };
 export const SIGNATURE_MAX_SIDE = 4000;
 
+const SIGNATURE_EXTENSION = /\.(png|jpe?g)$/i;
+
 export type SignatureCheck = { ok: true; file: File } | { ok: false; message: string };
 
 /** Every signing move carries the studio's signature image (BE: field `file`, PNG or JPEG, at most 2 MB). */
@@ -59,11 +62,21 @@ export function checkSignatureImage(value: FormDataEntryValue | null): Signature
   if (!(value instanceof File) || value.size === 0) {
     return { ok: false, message: 'Vui lòng chọn ảnh chữ ký của Studio.' };
   }
-  const name = value.name.toLowerCase();
-  const isImage = ['image/png', 'image/jpeg'].includes(value.type) || /\.(png|jpe?g)$/.test(name);
-  if (!isImage) return { ok: false, message: 'Ảnh chữ ký phải là file PNG hoặc JPG.' };
+  // The API picks the kind by the file's extension, then checks the content against it.
+  if (!SIGNATURE_EXTENSION.test(value.name)) return { ok: false, message: 'Ảnh chữ ký phải là file PNG hoặc JPG.' };
   if (value.size > SIGNATURE_MAX_BYTES) return { ok: false, message: 'Ảnh chữ ký tối đa 2 MB.' };
   return { ok: true, file: value };
+}
+
+/**
+ * The first bytes of the chosen image against its extension, as the API checks them: a JPEG renamed .png (or the
+ * other way round) is refused there, so it is refused here before the studio confirms.
+ */
+export function checkSignatureContent(name: string, head: Uint8Array): string | null {
+  const png = [0x89, 0x50, 0x4e, 0x47].every((byte, index) => head[index] === byte);
+  const jpeg = [0xff, 0xd8, 0xff].every((byte, index) => head[index] === byte);
+  const matches = /\.png$/i.test(name) ? png : jpeg;
+  return matches ? null : 'Nội dung ảnh chữ ký không khớp đuôi tệp (.png hoặc .jpg). Hãy lưu lại ảnh đúng định dạng rồi chọn lại.';
 }
 
 /** The size the browser read from the chosen image; null when it fits the signature block. */
@@ -137,6 +150,35 @@ export function tabOfProject(group: ProjectContracts): Exclude<ContractTab, 'his
   if (status === 'STUDIO_SIGNED') return 'waiting';
   if (status === 'SIGNED') return 'signed';
   return null;
+}
+
+/** The tab the project moves to once the studio's move went through. */
+export const TAB_AFTER: Record<ContractAction, ContractTab> = { propose: 'waiting', sign: 'signed', counter: 'waiting' };
+
+/** What the contracts page says after a move (`?notice=`): its outcome, or that the round changed meanwhile. */
+export type ContractNotice = ContractAction | 'changed';
+
+export const CONTRACT_NOTICE: Record<ContractNotice, { ok: boolean; text: string }> = {
+  propose: { ok: true, text: 'Đã ký hợp đồng. Hợp đồng đang chờ Admin AI Cinema ký phần Bên A.' },
+  sign: { ok: true, text: 'Đã ký hợp đồng. Hợp đồng đã đủ hai chữ ký, dự án đã được giao cho Studio.' },
+  counter: { ok: true, text: 'Đã gửi đề xuất giá mới kèm chữ ký của Studio. Chờ Admin phản hồi.' },
+  changed: {
+    ok: false,
+    text: 'Hợp đồng vừa được AI Cinema cập nhật trong lúc Studio đang thao tác nên chưa ký được. Trang đã tải lại trạng thái mới nhất; hãy xem lại hợp đồng rồi thao tác lại.',
+  },
+};
+
+export const toContractNotice = (value: string | undefined): ContractNotice | null =>
+  value && Object.hasOwn(CONTRACT_NOTICE, value) ? (value as ContractNotice) : null;
+
+/**
+ * True when the API refused a move because the round is no longer the one on screen: the Admin countered, signed or
+ * replaced it, or the project left negotiation (409 on the round's status), or the round is gone (404).
+ */
+export function isStaleRound(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  if (error.status === 404) return true;
+  return error.status === 409 && /a contract that is |can no longer be answered|no longer waiting/.test(error.message);
 }
 
 export interface Page<T> {

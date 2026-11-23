@@ -7,7 +7,7 @@ import { checkWithinBudget, parseCostVnd, type ContractAction } from '@/lib/doma
 import { formatBytes, formatVnd } from '@/lib/format';
 import { ConfirmDialog } from './ConfirmDialog';
 import { SignatureField } from './SignatureField';
-import { BUTTON, BUTTON_GHOST, ErrorCard, INPUT, SuccessCard } from './ui';
+import { BUTTON, BUTTON_GHOST, ErrorCard, INPUT } from './ui';
 
 const SUBMIT_LABEL: Record<ContractAction, string> = {
   propose: 'Ký hợp đồng',
@@ -79,12 +79,17 @@ export function ContractActions({
   const [imageProblem, setImageProblem] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  /** React empties the form after each send; the chosen image and its preview go with it. */
+  const [resets, setResets] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
   /** Set only by the dialog's confirm button: any other submit (Enter in the cost field) goes through review(). */
   const confirmedRef = useRef(false);
   const closeConfirm = useCallback(() => setConfirming(false), []);
 
-  if (state.done) return <SuccessCard message={state.done} />;
+  // Signing at the ceiling needs one: an unfunded or fully committed budget leaves nothing to sign for (409 at the API).
+  if (actions.includes('propose') && budgetVnd <= 0) {
+    return <ErrorCard message="Dự án chưa còn ngân sách sản xuất để ký hợp đồng này. Vui lòng liên hệ Admin AI Cinema bổ sung ngân sách." />;
+  }
   const needsCost = mode === 'counter' || (mode === 'propose' && priceMode === 'lower');
   const parsedCost = parseCostVnd(cost);
   const signedCost = mode === 'sign' ? adminCost : mode === 'propose' && priceMode === 'budget' ? budgetVnd : null;
@@ -117,7 +122,17 @@ export function ContractActions({
   }
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="space-y-4 rounded-lg border border-border bg-background p-4 sm:p-5">
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={onSubmit}
+      onReset={() => {
+        setFile(null);
+        setImageProblem(null);
+        setResets((count) => count + 1);
+      }}
+      className="space-y-4 rounded-lg border border-border bg-background p-4 sm:p-5"
+    >
       <input type="hidden" name="contractId" value={contractId} />
       <input type="hidden" name="action" value={mode} />
       <input type="hidden" name="priceMode" value={priceMode} />
@@ -158,6 +173,7 @@ export function ContractActions({
       )}
       {needsCost && <CostField value={cost} onChange={setCost} />}
       <SignatureField
+        key={resets}
         onChange={(chosen, issue) => {
           setFile(chosen);
           setImageProblem(issue);

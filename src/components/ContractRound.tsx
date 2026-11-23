@@ -109,7 +109,7 @@ export function ContractRound({
               ))}
             </ol>
           )}
-          <ContractActions contractId={contract.id} actions={actions} adminCost={contract.costVnd} budgetVnd={contract.budgetVnd} />
+          <ContractActions key={contract.id} contractId={contract.id} actions={actions} adminCost={contract.costVnd} budgetVnd={contract.budgetVnd} />
         </>
       )}
     </article>

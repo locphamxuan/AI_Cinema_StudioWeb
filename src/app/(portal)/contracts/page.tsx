@@ -2,8 +2,16 @@ import { ContractRound } from '@/components/ContractRound';
 import { ContractTabs, Pagination } from '@/components/ContractTabs';
 import { ProfileNotice } from '@/components/ProfileNotice';
 import { QuoteHistory } from '@/components/QuoteHistory';
-import { EmptyNote, Guarded, PageTitle } from '@/components/ui';
-import { groupByProject, paginate, tabOfProject, toContractTab, type ContractTab } from '@/lib/domain/contract';
+import { EmptyNote, ErrorCard, Guarded, PageTitle, SuccessCard } from '@/components/ui';
+import {
+  CONTRACT_NOTICE,
+  groupByProject,
+  paginate,
+  tabOfProject,
+  toContractNotice,
+  toContractTab,
+  type ContractTab,
+} from '@/lib/domain/contract';
 import { loadContracts, loadProfile } from '@/lib/session/portal-data';
 
 export const metadata = { title: 'Hợp đồng - Studio Web' };
@@ -74,17 +82,24 @@ async function Contracts({ tab, page }: { tab: ContractTab; page: number }) {
 export default async function ContractsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; page?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string; notice?: string }>;
 }) {
   const params = await searchParams;
   const tab = toContractTab(params.tab);
   const page = Number(params.page ?? 1);
+  const notice = toContractNotice(params.notice);
   return (
     <>
       <PageTitle
         title="Hợp đồng"
         description="Tải hợp đồng đã điền sẵn ngân sách, ký bằng ảnh chữ ký (có thể đề xuất giá thấp hơn). Hợp đồng hoàn tất khi đủ chữ ký hai bên."
       />
+      {notice &&
+        (CONTRACT_NOTICE[notice].ok ? (
+          <SuccessCard message={CONTRACT_NOTICE[notice].text} />
+        ) : (
+          <ErrorCard message={CONTRACT_NOTICE[notice].text} />
+        ))}
       <Guarded load={() => Contracts({ tab, page })} />
     </>
   );

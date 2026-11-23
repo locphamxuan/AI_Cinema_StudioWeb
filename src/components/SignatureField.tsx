@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { checkSignatureImage, checkSignatureSize } from '@/lib/domain/contract';
+import { checkSignatureContent, checkSignatureImage, checkSignatureSize } from '@/lib/domain/contract';
 import { formatBytes } from '@/lib/format';
 import { INPUT } from './ui';
 
@@ -33,6 +33,8 @@ export function SignatureField({ onChange }: { onChange: (file: File | null, pro
     if (!chosen) return onChange(null, null);
     const check = checkSignatureImage(chosen);
     if (!check.ok) return onChange(null, check.message);
+    const mismatch = checkSignatureContent(chosen.name, new Uint8Array(await chosen.slice(0, 4).arrayBuffer()));
+    if (mismatch) return onChange(null, mismatch);
     const url = URL.createObjectURL(chosen);
     const size = await imageSize(url);
     const problem = size ? checkSignatureSize(size.width, size.height) : 'Không đọc được ảnh chữ ký, hãy chọn ảnh khác.';

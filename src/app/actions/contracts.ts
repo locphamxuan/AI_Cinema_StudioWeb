@@ -1,21 +1,30 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { unstable_rethrow } from 'next/navigation';
-import { describeError } from '@/lib/api/http';
-import { checkSignatureImage, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
+import { redirect, unstable_rethrow } from 'next/navigation';
+import { ApiError, describeError } from '@/lib/api/http';
+import {
+  checkSignatureImage,
+  isStaleRound,
+  parseCostVnd,
+  TAB_AFTER,
+  type ContractAction,
+  type ContractNotice,
+  type ContractTab,
+} from '@/lib/domain/contract';
 import { withPortal } from '@/lib/session/server';
 
 export interface ContractActionState {
   error?: string;
-  done?: string;
 }
 
-const DONE: Record<ContractAction, string> = {
-  propose: 'Đã ký hợp đồng. Chờ Admin ký.',
-  sign: 'Đã ký hợp đồng. Hợp đồng đã đủ hai chữ ký, dự án đã được giao cho Studio.',
-  counter: 'Đã gửi đề xuất giá mới kèm chữ ký của Studio. Chờ Admin phản hồi.',
-};
+const ACTIONS: readonly ContractAction[] = ['propose', 'sign', 'counter'];
+
+/** Reloads every page's data and shows the contracts tab with what happened (the project left the tab it was in). */
+function showContracts(tab: ContractTab, notice: ContractNotice): never {
+  revalidatePath('/', 'layout');
+  redirect(`/contracts?tab=${tab}&notice=${notice}`);
+}
 
 /**
  * One form for the three moves of the studio on a contract round; `action` says which. Each carries the studio's
@@ -25,7 +34,7 @@ const DONE: Record<ContractAction, string> = {
 export async function actOnContract(_previous: ContractActionState, form: FormData): Promise<ContractActionState> {
   const contractId = String(form.get('contractId') ?? '');
   const action = String(form.get('action') ?? '') as ContractAction;
-  if (!contractId || !(action in DONE)) return { error: 'Yêu cầu không hợp lệ.' };
+  if (!contractId || !ACTIONS.includes(action)) return { error: 'Yêu cầu không hợp lệ.' };
   if (form.get('agree') !== 'on') return { error: 'Vui lòng xác nhận đã đọc và đồng ý điều khoản trước khi ký.' };
 
   const signature = checkSignatureImage(form.get('file'));
@@ -47,8 +56,11 @@ export async function actOnContract(_previous: ContractActionState, form: FormDa
     });
   } catch (error) {
     unstable_rethrow(error);
+    // The Admin moved the round on while the studio was on the page: show where it stands now.
+    if (isStaleRound(error)) showContracts('todo', 'changed');
+    // Any other conflict (profile incomplete, budget changed) is explained on a page reloaded with current data.
+    if (error instanceof ApiError && error.status === 409) revalidatePath('/', 'layout');
     return { error: describeError(error) };
   }
-  revalidatePath('/', 'layout');
-  return { done: DONE[action] };
+  showContracts(TAB_AFTER[action], action);
 }
