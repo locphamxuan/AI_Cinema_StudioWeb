@@ -1,11 +1,13 @@
 import Link from 'next/link';
-import { ArrowRight, Bell, Building2, CheckCheck, Clock, FileSignature, Film } from 'lucide-react';
+import { ArrowRight, Bell, CheckCheck, Clock } from 'lucide-react';
 import { markAllNotificationsRead } from '@/app/actions/notifications';
-import { Badge, CARD, EmptyNote, Facts, Guarded } from '@/components/ui';
-import { needsStudio } from '@/lib/domain/contract';
+import { ContractProgress, StatTiles } from '@/components/DashboardStats';
+import { ProfileNotice } from '@/components/ProfileNotice';
+import { Badge, BUTTON, CARD, EmptyNote, Facts, Guarded } from '@/components/ui';
+import { groupByProject, tabOfProject } from '@/lib/domain/contract';
 import { PROJECT_STATUS_LABEL } from '@/lib/domain/episode';
 import { formatDateTime, formatVnd } from '@/lib/format';
-import { loadContracts, loadNotifications, loadProjects, loadStudio } from '@/lib/session/portal-data';
+import { loadContracts, loadNotifications, loadProfile, loadProjects, loadStudio } from '@/lib/session/portal-data';
 import type { PortalNotification } from '@/lib/api/types';
 
 export const metadata = { title: 'Tổng quan - Studio Web' };
@@ -37,84 +39,83 @@ function NotificationItem({ item }: { item: PortalNotification }) {
 }
 
 async function Overview() {
-  const [studio, contracts, projects, notifications] = await Promise.all([
+  const [studio, contracts, projects, notifications, profile] = await Promise.all([
     loadStudio(),
     loadContracts(),
     loadProjects(),
     loadNotifications(),
+    loadProfile(),
   ]);
-  const waiting = contracts.filter(needsStudio).length;
+  const groups = groupByProject(contracts);
+  const count = (tab: ReturnType<typeof tabOfProject>) => groups.filter((group) => tabOfProject(group) === tab).length;
+  const [todo, waiting, signed] = [count('todo'), count('waiting'), count('signed')];
   const producingList = projects.filter((project) => project.status === 'IN_PRODUCTION');
-  const producing = producingList.length;
   const heroProject = producingList[0] ?? projects[0] ?? null;
   const unread = notifications.data.filter((item) => !item.readAt).length;
+  const signedValueVnd = contracts
+    .filter((contract) => contract.status === 'SIGNED')
+    .reduce((sum, contract) => sum + (contract.costVnd ?? 0), 0);
 
   return (
     <>
-      <section className={`${CARD} space-y-1 p-6`}>
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">
-          Xin chào, {studio.name}
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {waiting
-            ? `Có ${waiting} vòng hợp đồng đang chờ Studio ký. Mở Hợp đồng để xử lý.`
-            : 'Theo dõi hợp đồng, hạn giao từng tập và yêu cầu sửa từ Reviewer của AI Cinema.'}
-        </p>
+      <section className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-balance">Xin chào, {studio.name}</h1>
+          <p className="text-sm text-muted">
+            {todo
+              ? `Có ${todo} hợp đồng đang chờ Studio ký.`
+              : 'Theo dõi hợp đồng, hạn giao từng tập và yêu cầu sửa từ Reviewer của AI Cinema.'}
+          </p>
+        </div>
+        {todo > 0 && (
+          <Link href="/contracts?tab=todo" className={BUTTON}>
+            Mở hợp đồng cần ký
+          </Link>
+        )}
       </section>
 
-      <div className="grid gap-5 md:grid-cols-3">
-        <section id="studio-profile" className={`${CARD} space-y-3.5 p-6`}>
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
-            <Building2 className="h-4 w-4 text-slate-900 dark:text-white" aria-hidden="true" />
-            <h2>Thông tin pháp nhân</h2>
+      {!profile.complete && <ProfileNotice missing={profile.missing} />}
+
+      <StatTiles
+        tiles={[
+          { stage: 'todo', label: 'Cần Studio ký', value: todo, note: `trên tổng ${groups.length} dự án có hợp đồng`, href: '/contracts?tab=todo' },
+          { stage: 'waiting', label: 'Chờ Admin ký', value: waiting, note: 'Studio đã ký, chờ AI Cinema', href: '/contracts?tab=waiting' },
+          { stage: 'signed', label: 'Đã ký đủ', value: signed, note: 'Hợp đồng có đủ chữ ký hai bên', href: '/contracts?tab=signed' },
+          {
+            stage: 'producing',
+            label: 'Đang sản xuất',
+            value: producingList.length,
+            note: producingList[0] ? `Đang chạy: ${producingList[0].title}` : `trên tổng ${projects.length} dự án`,
+            href: '/projects',
+          },
+        ]}
+      />
+
+      <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+        <ContractProgress
+          signedValueVnd={signedValueVnd}
+          parts={[
+            { stage: 'todo', label: 'Cần Studio ký', value: todo },
+            { stage: 'waiting', label: 'Chờ Admin ký', value: waiting },
+            { stage: 'signed', label: 'Đã ký đủ', value: signed },
+          ]}
+        />
+        <section id="studio-profile" className={`${CARD} space-y-3 p-5`}>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-semibold">Thông tin pháp nhân</h2>
+            {profile.complete ? <Badge tone="done">Đủ để ký</Badge> : <Badge tone="action">Còn thiếu</Badge>}
           </div>
           <Facts
             items={[
-              ['Tên Studio', studio.name],
               ['Email', studio.email ?? '-'],
-              ['Người liên hệ', studio.contactName ?? '-'],
-              ['Điện thoại', studio.phone ?? '-'],
+              ['Người đại diện', studio.contactName ?? '-'],
+              ['Mã số thuế', profile.taxCode ?? 'Chưa điền'],
             ]}
           />
+          <Link href="/profile" className="inline-block text-sm font-semibold underline underline-offset-2">
+            Xem hồ sơ pháp lý
+          </Link>
         </section>
-
-        <Link
-          href="/contracts"
-          className={`${CARD} group flex flex-col justify-between space-y-3 bg-linear-to-t from-primary/5 to-card p-6 transition-shadow hover:shadow-md`}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-              Hợp đồng chờ Studio xử lý
-            </span>
-            <span className="flex size-9 items-center justify-center rounded-xl bg-amber-500/12 text-amber-600 dark:bg-amber-400/12 dark:text-amber-400">
-              <FileSignature className="h-4 w-4" aria-hidden="true" />
-            </span>
-          </div>
-          <div>
-            <p className="text-3xl leading-none font-semibold tracking-tight tabular-nums">{waiting}</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">trên tổng {contracts.length} vòng hợp đồng</p>
-          </div>
-        </Link>
-
-        <Link
-          href="/projects"
-          className={`${CARD} group flex flex-col justify-between space-y-3 bg-linear-to-t from-primary/5 to-card p-6 transition-shadow hover:shadow-md`}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-              Dự án đang sản xuất
-            </span>
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary/12 text-primary">
-              <Film className="h-4 w-4" aria-hidden="true" />
-            </span>
-          </div>
-          <div>
-            <p className="text-3xl leading-none font-semibold tracking-tight tabular-nums">{producing}</p>
-            <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-              {producingList[0] ? `Đang chạy: ${producingList[0].title}` : `trên tổng ${projects.length} dự án`}
-            </p>
-          </div>
-        </Link>
       </div>
 
       {heroProject && (
