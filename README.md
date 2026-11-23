@@ -7,7 +7,8 @@ calls the AI Cinema API with that account, so films are exchanged only inside th
 | --- | --- |
 | Đăng nhập | Email and password of the STUDIO account the Admin created, on this site, in the same tab (`POST /auth/login`); any other role is refused and its session revoked. |
 | Tổng quan | Studio details, contracts waiting for it, projects in production, notifications. |
-| Hợp đồng | Every round of each negotiation with its value and budget ceiling. Downloads the unsigned contract the system generates once the Admin approves the Final Script (film, episodes, deadlines, budget), then uploads it signed by the studio: at the budget, or at a lower cost. Agrees with / counters the Admin's cost. Every move uploads a signed PDF (at most 10 MB). Downloads the Admin-signed, studio-signed and merged FINAL PDFs. |
+| Hợp đồng | Sub-tabs Cần ký / Chờ Admin ký / Đã ký đủ / Lịch sử báo giá, paged. Downloads the unsigned contract the system generates once the Admin approves the Final Script (film, episodes, deadlines, budget), then signs it by uploading a signature image (PNG/JPG, at most 2 MB, previewed first): at the budget, or at a lower cost. Agrees with / counters the Admin's cost the same way. The system draws each signature into the same contract, so the Admin-signed, studio-signed and FINAL copies have the layout of the unsigned one. Signing needs a complete legal profile. |
+| Hồ sơ pháp lý | The studio fills in its own Bên B (address, tax code, bank account and bank, title of the representative); name, contract email, representative and phone stay with the Admin. |
 | Dự án | Final Script, episodes with deadlines and status, latest delivery, the Reviewer's change requests; processes a failed delivery again. |
 | Nộp phim | Delivers one episode to the Reviewer (MP4/MOV file or link) with the mandatory AI Disclosure and a proposed AI label. |
 
