@@ -106,7 +106,10 @@ function contractMove(res, contractId, move, body) {
     return fail(res, 400, 'BAD_REQUEST', 'Attach the signature image (PNG or JPEG) in the "file" field');
   }
   const rule = CONTRACT_MOVES[move];
-  if (contract.status !== rule.from) return fail(res, 409, 'CONFLICT', `The contract is ${contract.status}, it cannot ${move}`);
+  if (contract.status !== rule.from) {
+    const verb = move === 'counter' ? 'answer with another price' : 'sign';
+    return fail(res, 409, 'CONFLICT', `Cannot ${verb} a contract that is ${contract.status} (expected ${rule.from})`);
+  }
   const updated = rule.apply(contract, body.costVnd) ?? contract;
   updated.documents = [...(updated.documents ?? []).filter((d) => d.side !== 'STUDIO'), document('STUDIO', body.fileName)];
   updated.updatedAt = now();
@@ -155,9 +158,21 @@ async function route(req, res) {
   const method = req.method;
   const body = await readBody(req);
 
+  let match;
   if (method === 'GET' && path === '/__health') return send(res, 200, { ok: true });
   if (method === 'POST' && path === '/__test/reset') {
     db = seed();
+    return send(res, 204);
+  }
+  // What the Admin does on its own portal while the studio is on a page: move a round on, or notify the studio.
+  if (method === 'POST' && (match = path.match(/^\/__test\/contracts\/([^/]+)$/))) {
+    Object.assign(db.contracts.find((c) => c.id === match[1]), body, { updatedAt: now() });
+    return send(res, 204);
+  }
+  if (method === 'POST' && path === '/__test/notifications') {
+    for (let n = 1; n <= body.count; n += 1) {
+      db.notifications.unshift({ id: randomUUID(), type: 'CONTRACT_UPDATED', title: `Thông báo thử ${n}`, body: null, link: '/projects', readAt: null, createdAt: now() });
+    }
     return send(res, 204);
   }
   if (method === 'POST' && path === '/auth/login') {
@@ -176,7 +191,6 @@ async function route(req, res) {
   const token = (req.headers.authorization ?? '').replace(/^Bearer /, '');
   if (!tokens.access.has(token)) return fail(res, 401, 'UNAUTHORIZED', 'Invalid token');
 
-  let match;
   if (method === 'GET' && path === '/studio-portal/me') return send(res, 200, db.studio);
   if (method === 'GET' && path === '/studio-portal/profile') return send(res, 200, profileView());
   if (method === 'PUT' && path === '/studio-portal/profile') {
@@ -215,7 +229,19 @@ async function route(req, res) {
   if (method === 'POST' && (match = path.match(/^\/studio-portal\/media-assets\/([^/]+)\/retry$/))) return retry(res, match[1]);
   if (method === 'GET' && path === '/notifications') {
     const limit = Number(url.searchParams.get('limit') ?? 20);
-    return send(res, 200, { data: db.notifications.slice(0, limit), meta: { itemsPerPage: limit, totalItems: db.notifications.length, currentPage: 1, totalPages: 1 } });
+    const page = Number(url.searchParams.get('page') ?? 1);
+    const totalItems = db.notifications.length;
+    const data = db.notifications.slice((page - 1) * limit, page * limit);
+    return send(res, 200, { data, meta: { itemsPerPage: limit, totalItems, currentPage: page, totalPages: Math.max(1, Math.ceil(totalItems / limit)) } });
+  }
+  if (method === 'GET' && path === '/notifications/unread-count') {
+    return send(res, 200, { unread: db.notifications.filter((item) => !item.readAt).length });
+  }
+  if (method === 'PATCH' && (match = path.match(/^\/notifications\/([^/]+)\/read$/))) {
+    const item = db.notifications.find((n) => n.id === match[1]);
+    if (!item) return fail(res, 404, 'NOT_FOUND', 'Notification not found');
+    item.readAt ??= now();
+    return send(res, 204);
   }
   if (method === 'PATCH' && path === '/notifications/read-all') {
     const unread = db.notifications.filter((item) => !item.readAt);

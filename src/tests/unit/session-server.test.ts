@@ -21,7 +21,7 @@ const revalidatePath = vi.fn();
 vi.mock('next/cache', () => ({ revalidatePath: (...args: unknown[]) => revalidatePath(...args) }));
 
 import { logout } from '@/app/actions/auth';
-import { markAllNotificationsRead } from '@/app/actions/notifications';
+import { markAllNotificationsRead, openNotification } from '@/app/actions/notifications';
 import { mutationToken, pagePortal, withPortal } from '@/lib/session/server';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -136,7 +136,7 @@ describe('markAllNotificationsRead', () => {
     vi.stubGlobal('fetch', fetchMock);
     await markAllNotificationsRead();
     expect(fetchMock).toHaveBeenCalledWith('http://localhost:3001/api/notifications/read-all', expect.objectContaining({ method: 'PATCH' }));
-    expect(revalidatePath).toHaveBeenCalledWith('/');
+    expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
   });
 
   it('sends the studio to the login page when the session is gone', async () => {
@@ -147,6 +147,30 @@ describe('markAllNotificationsRead', () => {
     signedIn();
     vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'X', message: 'down' } }, 500)));
     await expect(markAllNotificationsRead()).resolves.toBeUndefined();
-    expect(revalidatePath).toHaveBeenCalledWith('/');
+    expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
+  });
+});
+
+describe('openNotification', () => {
+  const opened = (fields: Record<string, string>) => {
+    const form = new FormData();
+    for (const [key, value] of Object.entries(fields)) form.set(key, value);
+    return openNotification(form);
+  };
+
+  it('marks the notification read and opens the page it points to', async () => {
+    signedIn();
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(opened({ notificationId: 'n1', link: '/projects/p1/episodes/e1' })).rejects.toThrow('REDIRECT /projects/p1/episodes/e1');
+    expect(fetchMock).toHaveBeenCalledWith('http://localhost:3001/api/notifications/n1/read', expect.objectContaining({ method: 'PATCH' }));
+  });
+
+  it('still opens the page when marking fails, and never leaves the site', async () => {
+    signedIn();
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'X', message: 'down' } }, 500)));
+    await expect(opened({ notificationId: 'n1', link: '/contracts' })).rejects.toThrow('REDIRECT /contracts');
+    await expect(opened({ notificationId: 'n1', link: '//evil.example/x' })).rejects.toThrow('REDIRECT /');
+    await expect(opened({ notificationId: 'n1', link: 'https://evil.example' })).rejects.toThrow(/^REDIRECT \/$/);
   });
 });

@@ -140,13 +140,40 @@ describe('actOnContract', () => {
     signedIn();
     const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async () => json({ id: 'c1' }));
     vi.stubGlobal('fetch', fetchMock);
-    const state = await actOnContract(
-      {},
-      form({ contractId: 'c1', action: 'propose', priceMode: 'budget', costVnd: '1500', agree: 'on' }, signature()),
-    );
+    await expect(
+      actOnContract({}, form({ contractId: 'c1', action: 'propose', priceMode: 'budget', costVnd: '1500', agree: 'on' }, signature())),
+    ).rejects.toThrow('REDIRECT /contracts?tab=waiting&notice=propose');
     const sent = fetchMock.mock.calls[0][1]?.body as FormData;
     expect(sent.has('costVnd')).toBe(false);
-    expect(state.done).toBe('Đã ký hợp đồng. Chờ Admin ký.');
+  });
+
+  it('reloads the contracts when the Admin moved the round on meanwhile', async () => {
+    signedIn();
+    const stale = { error: { code: 'CONFLICT', message: 'Cannot sign a contract that is SUPERSEDED (expected ADMIN_COUNTERED)' } };
+    vi.stubGlobal('fetch', vi.fn(async () => json(stale, 409)));
+    await expect(actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }, signature()))).rejects.toThrow(
+      'REDIRECT /contracts?tab=todo&notice=changed',
+    );
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'NOT_FOUND', message: 'Contract not found' } }, 404)));
+    await expect(actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }, signature()))).rejects.toThrow(
+      'REDIRECT /contracts?tab=todo&notice=changed',
+    );
+  });
+
+  it('explains an incomplete legal profile in Vietnamese, naming the fields', async () => {
+    signedIn();
+    const body = {
+      error: {
+        code: 'CONFLICT',
+        message: 'The studio legal profile is incomplete (taxCode, bankAccount); complete it before signing the contract',
+        details: { reason: 'STUDIO_PROFILE_INCOMPLETE', studioId: '3f0c', missing: ['taxCode', 'bankAccount'] },
+      },
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => json(body, 409)));
+    const state = await actOnContract({}, form({ contractId: 'c1', action: 'sign', agree: 'on' }, signature()));
+    expect(state.error).toBe(
+      'Hồ sơ pháp lý của Studio còn thiếu: mã số thuế, số tài khoản. Hãy hoàn thiện hồ sơ pháp lý trước khi ký hợp đồng.',
+    );
   });
 
   it('proposes a lower cost and reports the API refusal', async () => {
@@ -168,10 +195,11 @@ describe('actOnContract', () => {
     signedIn();
     const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async () => json({ id: 'c2' }));
     vi.stubGlobal('fetch', fetchMock);
-    const done = await actOnContract({}, form({ contractId: 'c1', action: 'counter', costVnd: '160000000', agree: 'on' }, signature()));
+    await expect(
+      actOnContract({}, form({ contractId: 'c1', action: 'counter', costVnd: '160000000', agree: 'on' }, signature())),
+    ).rejects.toThrow('REDIRECT /contracts?tab=waiting&notice=counter');
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:3001/api/studio-portal/contracts/c1/counter');
     expect((fetchMock.mock.calls[0][1]?.body as FormData).get('costVnd')).toBe('160000000');
-    expect(done.done).toContain('đề xuất giá mới');
     const missing = await actOnContract({}, form({ contractId: 'c1', action: 'counter', agree: 'on' }, signature()));
     expect(missing.error).toBe('Vui lòng nhập giá sản xuất.');
     expect((await actOnContract({}, new FormData())).error).toBe('Yêu cầu không hợp lệ.');

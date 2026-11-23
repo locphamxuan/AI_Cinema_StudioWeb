@@ -75,7 +75,7 @@ const card = (over: Partial<Contract>, missingProfile: LegalProfileField[] = [])
   />
 );
 const signatureInput = () => screen.getByLabelText(/Ảnh chữ ký của Studio/);
-const png = (name = 'chu-ky.png') => new File(['png'], name, { type: 'image/png' });
+const png = (name = 'chu-ky.png') => new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], name, { type: 'image/png' });
 
 describe('ContractRound', () => {
   beforeEach(() => {
@@ -197,6 +197,19 @@ describe('ContractRound', () => {
     (signatureInput() as HTMLInputElement).required = false;
     await userEvent.click(within(dialog).getByRole('button', { name: 'Ký hợp đồng' }));
     await waitFor(() => expect(actOnContract).toHaveBeenCalledTimes(1));
+  });
+
+  it('refuses a JPEG renamed .png before the studio confirms', async () => {
+    render(card({}));
+    await userEvent.upload(signatureInput(), new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], 'chu-ky.png', { type: 'image/png' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('không khớp đuôi tệp');
+    expect(screen.queryByRole('img', { name: 'Xem trước chữ ký của Studio' })).not.toBeInTheDocument();
+  });
+
+  it('says there is no budget to sign for instead of offering to sign at 0 VND', () => {
+    render(card({ ...sent, budgetVnd: 0 }));
+    expect(screen.getByRole('alert')).toHaveTextContent('chưa còn ngân sách sản xuất');
+    expect(screen.queryByRole('button', { name: 'Ký hợp đồng' })).not.toBeInTheDocument();
   });
 
   it('offers nothing on a round waiting for the Admin', () => {

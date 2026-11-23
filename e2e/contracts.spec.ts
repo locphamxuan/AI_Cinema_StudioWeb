@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { FAKE_API_URL } from './env';
 import { expect, test } from './fixtures';
 import { signaturePng } from './signature';
 
@@ -70,13 +71,28 @@ test('signs the cost the Admin countered, which moves the contract to Đã ký �
   await card.getByRole('button', { name: 'Đồng ý giá và ký' }).click();
   await expect(page.getByRole('dialog')).toContainText('150.000.000 VND');
   await confirmSign(page, 'Đồng ý giá và ký');
-  await expect(project(page, 'Hành trình ánh sáng')).toHaveCount(0);
-  await openTab(page, 'Đã ký đủ');
+  // The page follows the contract to its new tab and says what happened there.
+  await expect(page).toHaveURL(/tab=signed/);
+  await expect(page.getByRole('status')).toContainText('Hợp đồng đã đủ hai chữ ký');
+  await expect(page.getByRole('link', { name: /^Đã ký đủ/ })).toHaveAttribute('aria-current', 'page');
   const signed = project(page, 'Hành trình ánh sáng');
   await expect(signed.getByText('Đã ký đủ')).toBeVisible();
   const download = page.waitForEvent('download');
   await signed.getByRole('link', { name: 'Bản đủ hai chữ ký' }).click();
   expect((await download).suggestedFilename()).toBe('hop-dong-final.pdf');
+});
+
+test('a round the Admin moved on meanwhile is not signed: the page reloads and says so', async ({ page, request }) => {
+  const card = project(page, 'Hành trình ánh sáng');
+  await agree(card);
+  await card.getByRole('button', { name: 'Đồng ý giá và ký' }).click();
+  // The Admin replaces the round on its portal while the confirmation is open.
+  const moved = await request.post(`${FAKE_API_URL}/__test/contracts/0b6f0c1e-7777-4a6b-9c55-000000000002`, { data: { status: 'SUPERSEDED' } });
+  expect(moved.status()).toBe(204);
+  await confirmSign(page, 'Đồng ý giá và ký');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('Hợp đồng vừa được AI Cinema cập nhật');
+  await expect(project(page, 'Hành trình ánh sáng')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /^Cần ký/ })).toContainText('1');
 });
 
 test('counters the Admin with another cost, which opens a new round', async ({ page }) => {

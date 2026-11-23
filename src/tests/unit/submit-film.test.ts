@@ -99,6 +99,16 @@ describe('submitFilm', () => {
     expect(sent).toHaveLength(2);
   });
 
+  it('sends nothing to the bucket when the start of the upload is not a readable answer', async () => {
+    const { Xhr, sent } = fakeXhr([{ status: 200, responseText: '<html>proxy page</html>' }]);
+    expect(await submitFilm('e1', input(), undefined, Xhr)).toEqual({
+      ok: false,
+      status: 200,
+      error: 'Không bắt đầu tải phim lên được. Vui lòng thử lại.',
+    });
+    expect(sent).toHaveLength(1);
+  });
+
   it('posts a link as JSON', async () => {
     const { Xhr, sent } = fakeXhr([{ status: 201 }]);
     await submitFilm('e1', input({ method: 'REMOTE_FILE', file: null, url: 'https://cdn/a.mp4' }), undefined, Xhr);

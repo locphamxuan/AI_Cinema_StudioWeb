@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Contract } from '@/lib/api/types';
+import { ApiError } from '@/lib/api/http';
 import {
+  checkSignatureContent,
   checkSignatureImage,
   checkSignatureSize,
   CONTRACT_STATUS_LABEL,
@@ -9,7 +11,9 @@ import {
   hasSignedContract,
   paginate,
   parseCostVnd,
+  isStaleRound,
   tabOfProject,
+  toContractNotice,
   toContractTab,
 } from '@/lib/domain/contract';
 import { checkLegalProfile } from '@/lib/domain/legal-profile';
@@ -109,10 +113,42 @@ describe('signature image checks', () => {
     expect(checkSignatureImage(heavy)).toEqual({ ok: false, message: 'Ảnh chữ ký tối đa 2 MB.' });
   });
 
+  it('goes by the extension as the API does, whatever type the browser reports', () => {
+    expect(checkSignatureImage(new File(['x'], 'KY.PNG', { type: '' })).ok).toBe(true);
+    expect(checkSignatureImage(new File(['x'], 'chu-ky', { type: 'image/png' }))).toMatchObject({ ok: false });
+  });
+
+  it('refuses content that does not match the extension', () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+    expect(checkSignatureContent('ky.png', png)).toBeNull();
+    expect(checkSignatureContent('ky.JPEG', jpeg)).toBeNull();
+    expect(checkSignatureContent('ky.png', jpeg)).toContain('không khớp đuôi tệp');
+    expect(checkSignatureContent('ky.jpg', png)).toContain('không khớp đuôi tệp');
+  });
+
   it('wants a size that prints legibly in the signature block', () => {
     expect(checkSignatureSize(600, 200)).toBeNull();
     expect(checkSignatureSize(149, 200)).toContain('quá nhỏ');
     expect(checkSignatureSize(4001, 200)).toContain('quá lớn');
+  });
+});
+
+describe('a round that changed meanwhile', () => {
+  it('is a 409 on the round status or project, or a 404; other refusals are not', () => {
+    const conflict = (message: string) => new ApiError(409, 'CONFLICT', message);
+    expect(isStaleRound(conflict('Cannot sign a contract that is SIGNED (expected ADMIN_COUNTERED)'))).toBe(true);
+    expect(isStaleRound(conflict('The project is CANCELLED; its contract can no longer be answered'))).toBe(true);
+    expect(isStaleRound(new ApiError(404, 'NOT_FOUND', 'Contract not found'))).toBe(true);
+    expect(isStaleRound(conflict('The fee (1 VND) is more than the budget left (0 VND); ask the Admin for more production cost'))).toBe(false);
+    expect(isStaleRound(new Error('offline'))).toBe(false);
+  });
+
+  it('reads the notice of the contracts page from its URL', () => {
+    expect(toContractNotice('changed')).toBe('changed');
+    expect(toContractNotice('sign')).toBe('sign');
+    expect(toContractNotice('toString')).toBeNull();
+    expect(toContractNotice(undefined)).toBeNull();
   });
 });
 
