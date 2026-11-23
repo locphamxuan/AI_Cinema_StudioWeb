@@ -62,10 +62,13 @@ describe('portalApi', () => {
     const fetchImpl = fakeFetch(200, {});
     const api = portalApi(BASE, 'tok', fetchImpl);
     await api.me();
-    const pdf = new File(['%PDF'], 'ky.pdf', { type: 'application/pdf' });
-    await api.proposeCost('c1', 170_000_000, pdf);
-    await api.signContract('c1', pdf);
-    await api.counterCost('c1', 150_000_000, pdf);
+    await api.profile();
+    const profile = { address: 'Số 1', taxCode: '0312345678', bankAccount: '0123456', bankName: 'ACB', representativeTitle: 'GĐ' };
+    await api.updateProfile(profile);
+    const signature = new File(['png'], 'ky.png', { type: 'image/png' });
+    await api.proposeCost('c1', 170_000_000, signature);
+    await api.signContract('c1', signature);
+    await api.counterCost('c1', 150_000_000, signature);
     await api.project('p/1');
     await api.notifications(5);
     await api.markAllRead();
@@ -75,6 +78,8 @@ describe('portalApi', () => {
     const calls = fetchImpl.mock.calls.map(([url, init]) => [init?.method, url.replace(BASE, ''), bodyOf(init?.body)]);
     expect(calls).toEqual([
       ['GET', '/studio-portal/me', undefined],
+      ['GET', '/studio-portal/profile', undefined],
+      ['PUT', '/studio-portal/profile', JSON.stringify(profile)],
       ['POST', '/studio-portal/contracts/c1/propose', 'form:file,costVnd:170000000'],
       ['POST', '/studio-portal/contracts/c1/sign', 'form:file:null'],
       ['POST', '/studio-portal/contracts/c1/counter', 'form:file,costVnd:150000000'],

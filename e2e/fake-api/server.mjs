@@ -16,7 +16,7 @@ const send = (res, status, body) => {
 };
 const fail = (res, status, code, message) => send(res, status, { error: { code, message } });
 
-/** JSON or multipart (signed PDF + costVnd) bodies, read loosely as the tests need. */
+/** JSON or multipart (signature image + costVnd) bodies, read loosely as the tests need. */
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -34,6 +34,13 @@ async function readBody(req) {
 }
 
 const PDF = '%PDF-1.4\n% fake signed contract\n%%EOF';
+
+const LEGAL_FIELDS = ['address', 'taxCode', 'bankAccount', 'bankName', 'representativeTitle'];
+/** GET /studio-portal/profile: the studio with what still blocks signing, as the real API answers it. */
+function profileView() {
+  const missing = [...LEGAL_FIELDS, 'contactName'].filter((field) => !db.studio[field]);
+  return { ...db.studio, missing, complete: missing.length === 0 };
+}
 
 function issueSession() {
   const accessToken = `access-${randomUUID()}`;
@@ -95,7 +102,9 @@ function document(side, fileName) {
 function contractMove(res, contractId, move, body) {
   const contract = db.contracts.find((c) => c.id === contractId);
   if (!contract) return fail(res, 404, 'NOT_FOUND', 'Contract not found');
-  if (!body.fileName) return fail(res, 400, 'BAD_REQUEST', 'Attach the signed contract PDF in the "file" field');
+  if (!/\.(png|jpe?g)$/i.test(body.fileName ?? '')) {
+    return fail(res, 400, 'BAD_REQUEST', 'Attach the signature image (PNG or JPEG) in the "file" field');
+  }
   const rule = CONTRACT_MOVES[move];
   if (contract.status !== rule.from) return fail(res, 409, 'CONFLICT', `The contract is ${contract.status}, it cannot ${move}`);
   const updated = rule.apply(contract, body.costVnd) ?? contract;
@@ -169,6 +178,11 @@ async function route(req, res) {
 
   let match;
   if (method === 'GET' && path === '/studio-portal/me') return send(res, 200, db.studio);
+  if (method === 'GET' && path === '/studio-portal/profile') return send(res, 200, profileView());
+  if (method === 'PUT' && path === '/studio-portal/profile') {
+    for (const field of LEGAL_FIELDS) db.studio[field] = body[field];
+    return send(res, 200, profileView());
+  }
   if (method === 'GET' && path === '/studio-portal/contracts') {
     return send(res, 200, [...db.contracts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(withRefs));
   }

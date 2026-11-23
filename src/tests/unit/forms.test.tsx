@@ -43,12 +43,12 @@ describe('LoginPage', () => {
   const page = async (search: { expired?: string }) =>
     render(<ThemeProvider>{await LoginPage({ searchParams: Promise.resolve(search) })}</ThemeProvider>);
 
-  it('logs the studio in with its email and password on this page, with no other way out', async () => {
+  it('logs the studio in with its email and password, with a way back to the AI Cinema login', async () => {
     await page({});
     expect(screen.getByRole('heading', { name: 'Studio Web', level: 1 })).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
     expect(screen.getByLabelText('Mật khẩu')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /AI Cinema/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Quay lại đăng nhập AI Cinema' })).toHaveAttribute('href', 'http://localhost:3000/login');
     expect(screen.getByRole('heading', { name: 'Studio Web' })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
