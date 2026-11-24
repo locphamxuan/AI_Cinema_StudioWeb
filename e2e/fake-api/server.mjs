@@ -35,6 +35,10 @@ async function readBody(req) {
 
 const PDF = '%PDF-1.4\n% fake signed contract\n%%EOF';
 
+/** The contract number the API prints on a round and puts in each of its file names. */
+const contractNo = (c) => `AIC-${new Date(c.createdAt).getUTCFullYear()}-${c.id.slice(0, 8).toUpperCase()}-R${c.round}`;
+const COPY_NAMES = { ADMIN: 'hop-dong-ai-cinema-da-ky', STUDIO: 'hop-dong-studio-da-ky', FINAL: 'hop-dong-du-chu-ky' };
+
 const LEGAL_FIELDS = ['address', 'taxCode', 'bankAccount', 'bankName', 'representativeTitle'];
 /** GET /studio-portal/profile: the studio with what still blocks signing, as the real API answers it. */
 function profileView() {
@@ -85,7 +89,7 @@ const CONTRACT_MOVES = {
   sign: {
     from: 'ADMIN_COUNTERED',
     apply: (c) => {
-      c.documents = [...(c.documents ?? []), document('FINAL', 'hop-dong-final.pdf')];
+      c.documents = [...(c.documents ?? []), document('FINAL', c)];
       return Object.assign(c, { status: 'SIGNED', studioSignedAt: now() });
     },
   },
@@ -95,7 +99,8 @@ const CONTRACT_MOVES = {
   },
 };
 
-function document(side, fileName) {
+function document(side, contract) {
+  const fileName = `${COPY_NAMES[side]}-${contractNo(contract)}.pdf`;
   return { id: randomUUID(), side, fileName, sizeBytes: PDF.length, checksum: 'fake', uploadedAt: now() };
 }
 
@@ -110,8 +115,21 @@ function contractMove(res, contractId, move, body) {
     const verb = move === 'counter' ? 'answer with another price' : 'sign';
     return fail(res, 409, 'CONFLICT', `Cannot ${verb} a contract that is ${contract.status} (expected ${rule.from})`);
   }
+  if (move === 'counter' && body.costVnd === contract.costVnd) {
+    return fail(res, 400, 'BAD_REQUEST', 'The new cost is the same as the cost of this round; sign the round instead');
+  }
+  const { missing } = profileView();
+  if (missing.length) {
+    const message = `The studio legal profile is incomplete (${missing.join(', ')}); complete it before signing the contract`;
+    return send(res, 409, { error: { code: 'CONFLICT', message, details: { reason: 'STUDIO_PROFILE_INCOMPLETE', missing } } });
+  }
+  // A round the Admin signed before signature images: nothing to draw beside the studio's signature.
+  if (move === 'sign' && contract.missingSignature) {
+    const message = "The other side's signature image of this round is missing; the round must be sent again";
+    return send(res, 409, { error: { code: 'CONFLICT', message, details: { reason: 'COUNTERPART_SIGNATURE_MISSING' } } });
+  }
   const updated = rule.apply(contract, body.costVnd) ?? contract;
-  updated.documents = [...(updated.documents ?? []).filter((d) => d.side !== 'STUDIO'), document('STUDIO', body.fileName)];
+  updated.documents = [...(updated.documents ?? []).filter((d) => d.side !== 'STUDIO'), document('STUDIO', updated)];
   updated.updatedAt = now();
   return send(res, 201, withRefs(updated));
 }
@@ -169,6 +187,10 @@ async function route(req, res) {
     Object.assign(db.contracts.find((c) => c.id === match[1]), body, { updatedAt: now() });
     return send(res, 204);
   }
+  if (method === 'POST' && path === '/__test/profile') {
+    Object.assign(db.studio, body);
+    return send(res, 204);
+  }
   if (method === 'POST' && path === '/__test/notifications') {
     for (let n = 1; n <= body.count; n += 1) {
       db.notifications.unshift({ id: randomUUID(), type: 'CONTRACT_UPDATED', title: `Thông báo thử ${n}`, body: null, link: '/projects', readAt: null, createdAt: now() });
@@ -205,7 +227,7 @@ async function route(req, res) {
   }
   if (method === 'GET' && (match = path.match(/^\/studio-portal\/contracts\/([^/]+)\/template$/))) {
     if (!db.contracts.some((c) => c.id === match[1])) return fail(res, 404, 'NOT_FOUND', 'Contract not found');
-    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="hop-dong-${match[1]}.pdf"` });
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="hop-dong-chua-ky-${contractNo(db.contracts.find((c) => c.id === match[1]))}.pdf"` });
     return res.end(PDF);
   }
   if (method === 'GET' && (match = path.match(/^\/studio-portal\/contracts\/([^/]+)\/documents\/(ADMIN|STUDIO|FINAL)\/content$/))) {

@@ -42,6 +42,11 @@ function contract(id, projectId, round, fields) {
   };
 }
 
+/** A signed copy the API rendered, named after the contract number as the API names it. */
+function signedCopy(side, fileName) {
+  return { id: `0b6f0c1e-9999-4a6b-9c55-${side === 'ADMIN' ? '000000000001' : '000000000002'}`, side, fileName, sizeBytes: 36, checksum: 'fake', uploadedAt: AT };
+}
+
 function episode(id, episodeNumber, title, fields = {}) {
   return {
     id,
@@ -122,6 +127,7 @@ export function seed() {
         adminSignedAt: AT,
         adminSignedBy: ADMIN,
         updatedAt: '2026-11-08T03:00:00.000Z',
+        documents: [signedCopy('ADMIN', 'hop-dong-ai-cinema-da-ky-AIC-2026-0B6F0C1E-R2.pdf')],
       }),
       contract('0b6f0c1e-7777-4a6b-9c55-000000000003', IDS.fresh, 1, { updatedAt: '2026-11-09T03:00:00.000Z' }),
       contract('0b6f0c1e-7777-4a6b-9c55-000000000004', IDS.producing, 1, {
