@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Contract } from '@/lib/api/types';
 import { ApiError } from '@/lib/api/http';
 import {
+  checkNewCost,
   checkSignatureContent,
   checkSignatureImage,
   checkSignatureSize,
@@ -142,6 +143,14 @@ describe('a round that changed meanwhile', () => {
     expect(isStaleRound(new ApiError(404, 'NOT_FOUND', 'Contract not found'))).toBe(true);
     expect(isStaleRound(conflict('The fee (1 VND) is more than the budget left (0 VND); ask the Admin for more production cost'))).toBe(false);
     expect(isStaleRound(new Error('offline'))).toBe(false);
+    // A round signed before signature images is not stale: it needs a new round, which the page then shows.
+    expect(isStaleRound(conflict("The other side's signature image of this round is missing; the round must be sent again"))).toBe(false);
+  });
+
+  it('refuses a counter-offer at the price the Admin already proposed', () => {
+    expect(checkNewCost(150_000_000, 150_000_000)).toContain('bằng giá Admin đề xuất');
+    expect(checkNewCost(160_000_000, 150_000_000)).toBeNull();
+    expect(checkNewCost(160_000_000, null)).toBeNull();
   });
 
   it('reads the notice of the contracts page from its URL', () => {

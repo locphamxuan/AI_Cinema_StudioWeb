@@ -3,7 +3,7 @@
 import { useActionState, useCallback, useRef, useState } from 'react';
 import { PenLine } from 'lucide-react';
 import { actOnContract, type ContractActionState } from '@/app/actions/contracts';
-import { checkWithinBudget, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
+import { checkNewCost, checkWithinBudget, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
 import { formatBytes, formatVnd } from '@/lib/format';
 import { ConfirmDialog } from './ConfirmDialog';
 import { SignatureField } from './SignatureField';
@@ -103,6 +103,8 @@ export function ContractActions({
     if (needsCost && !parsedCost.ok) return setProblem(parsedCost.message);
     const overBudget = needsCost && parsedCost.ok ? checkWithinBudget(parsedCost.value, budgetVnd) : null;
     if (overBudget) return setProblem(overBudget);
+    const unchanged = mode === 'counter' && parsedCost.ok ? checkNewCost(parsedCost.value, adminCost) : null;
+    if (unchanged) return setProblem(unchanged);
     setProblem(null);
     setConfirming(true);
   }

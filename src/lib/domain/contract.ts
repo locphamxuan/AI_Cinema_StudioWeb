@@ -96,6 +96,12 @@ export function checkWithinBudget(cost: number, budgetVnd: number): string | nul
   return `Giá đề xuất vượt ngân sách trần ${new Intl.NumberFormat('vi-VN').format(budgetVnd)} VND.`;
 }
 
+/** A counter-offer at the price already on the table changes nothing: the API refuses it, so it is said here first. */
+export function checkNewCost(cost: number, current: number | null): string | null {
+  if (current === null || cost !== current) return null;
+  return 'Giá này bằng giá Admin đề xuất; hãy chọn "Đồng ý giá Admin" để ký.';
+}
+
 export const DOCUMENT_LABEL: Record<'ADMIN' | 'STUDIO' | 'FINAL', string> = {
   ADMIN: 'Bản Admin đã ký',
   STUDIO: 'Bản Studio đã ký',
