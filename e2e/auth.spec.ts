@@ -30,3 +30,9 @@ test('logging out ends the session', async ({ loggedIn: page }) => {
   await page.goto('/contracts');
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test('ST-STUDIO-06 the login page links back to the AI Cinema sign-in', async ({ page }) => {
+  await page.goto('/login');
+  // The link points at the AI Cinema web login (port 3000 by default), not this Studio Web /login.
+  await expect(page.getByRole('link', { name: 'Quay lại đăng nhập AI Cinema' })).toHaveAttribute('href', /localhost:3000\/login$/);
+});
