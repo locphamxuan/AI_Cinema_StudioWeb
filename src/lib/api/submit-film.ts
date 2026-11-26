@@ -70,7 +70,12 @@ export async function submitFilm(
   }
   if (!ok(started.status)) return result(started);
 
-  const upload = JSON.parse(started.text) as DirectUpload;
+  let upload: DirectUpload;
+  try {
+    upload = JSON.parse(started.text) as DirectUpload;
+  } catch {
+    return { ok: false, status: started.status, error: 'Không bắt đầu tải phim lên được. Vui lòng thử lại.' };
+  }
   const put = await send(Xhr, { method: 'PUT', url: upload.uploadUrl, body: file, headers: upload.headers }, onProgress);
   if (!ok(put.status)) {
     return { ok: false, status: put.status, error: 'Không tải được phim lên kho lưu trữ. Kiểm tra mạng rồi thử lại.' };

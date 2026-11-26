@@ -57,3 +57,14 @@ test('processes a failed delivery again', async ({ page }) => {
   await expect(card.getByRole('button', { name: 'Xử lý lại' })).toHaveCount(0);
   await expect(card).not.toContainText('Lỗi xử lý:');
 });
+
+test('ST-STUDIO-23 refuses delivery while the contract still waits for a signature', async ({ page }) => {
+  // "Hành trình ánh sáng" is still negotiating (round 2 not signed), so no film can be delivered for it.
+  await page.getByRole('link', { name: 'Dự án', exact: true }).click();
+  await page.getByRole('link', { name: /Hành trình ánh sáng/ }).click();
+  await expect(page.getByRole('heading', { name: 'Hành trình ánh sáng', level: 1 })).toBeVisible();
+  await expect(page.getByText('Hợp đồng chưa đủ hai chữ ký: Studio chỉ nộp phim được sau khi hợp đồng hoàn tất.')).toBeVisible();
+  // The episode is listed, but there is no way to submit a film before both signatures.
+  await expect(page.getByRole('heading', { name: /Danh sách tập \(1\)/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Nộp phim/ })).toHaveCount(0);
+});
