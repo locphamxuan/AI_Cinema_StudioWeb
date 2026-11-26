@@ -4,13 +4,16 @@ test('a visitor without a session lands on the login page', async ({ page }) => 
   await page.goto('/');
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole('heading', { name: 'Studio Web' })).toBeVisible();
+  // Another account type goes back to the AI Cinema login page.
+  await expect(page.getByRole('link', { name: 'Quay lại đăng nhập AI Cinema' })).toHaveAttribute('href', /\/login$/);
 });
 
 test('a studio logs in and reaches its dashboard', async ({ page }) => {
   await logIn(page);
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { name: 'Xin chào, Lumen Studio' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Hợp đồng chờ Studio xử lý/ })).toContainText('2');
+  await expect(page.getByRole('link', { name: /Cần Studio ký/ })).toContainText('2');
+  await expect(page.getByRole('img', { name: /Cần Studio ký: 2 dự án/ })).toBeVisible();
   await expect(page.getByText('Admin đề xuất giá mới')).toBeVisible();
 });
 
@@ -26,4 +29,10 @@ test('logging out ends the session', async ({ loggedIn: page }) => {
   await expect(page).toHaveURL(/\/login$/);
   await page.goto('/contracts');
   await expect(page).toHaveURL(/\/login$/);
+});
+
+test('ST-STUDIO-06 the login page links back to the AI Cinema sign-in', async ({ page }) => {
+  await page.goto('/login');
+  // The link points at the AI Cinema web login (port 3000 by default), not this Studio Web /login.
+  await expect(page.getByRole('link', { name: 'Quay lại đăng nhập AI Cinema' })).toHaveAttribute('href', /localhost:3000\/login$/);
 });

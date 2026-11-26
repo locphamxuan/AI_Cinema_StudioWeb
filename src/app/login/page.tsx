@@ -2,6 +2,7 @@ import { Film } from 'lucide-react';
 import { LoginForm } from '@/components/LoginForm';
 import { PosterWall } from '@/components/PosterWall';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { getConfig } from '@/lib/config';
 
 export const metadata = { title: 'Đăng nhập - Studio Web' };
 
@@ -26,6 +27,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
         <LoginForm notice={notice} />
         <p className="text-center text-xs leading-relaxed text-muted">Quên mật khẩu? Liên hệ Admin AI Cinema.</p>
+        <div className="border-t border-border pt-4 text-center text-sm">
+          <span className="text-muted">Không phải tài khoản Studio? </span>
+          <a href={getConfig().webLoginUrl} className="font-semibold text-foreground underline underline-offset-2 hover:opacity-80">
+            Quay lại đăng nhập AI Cinema
+          </a>
+        </div>
       </div>
     </main>
   );

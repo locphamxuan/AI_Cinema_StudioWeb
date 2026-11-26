@@ -34,8 +34,23 @@ describe('apiRequest', () => {
     const error = await apiRequest(BASE, '/x', { fetchImpl }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 400, code: 'BAD_REQUEST', details: ['costVnd must be a multiple of 1,000 VND'] });
-    // A validation detail the API words in English only falls back to what the status means.
-    expect(describeError(error)).toBe('Dữ liệu gửi lên không hợp lệ.');
+    expect(describeError(error)).toBe('Dữ liệu gửi lên không hợp lệ. Số tiền phải là bội số của 1.000 VND.');
+    // A validation detail the API words in English only is left out rather than shown in English.
+    const unknown = new ApiError(400, 'BAD_REQUEST', 'The request is invalid', ['foo must be a bar']);
+    expect(describeError(unknown)).toBe('Dữ liệu gửi lên không hợp lệ.');
+  });
+
+  it('words the signature and legal profile refusals of the API in Vietnamese', () => {
+    const say = (message: string, status = 400) => describeError(new ApiError(status, 'BAD_REQUEST', message));
+    expect(say('The signature image is 120x40 px; it must be at least 150x50 px')).toBe(
+      'Ảnh chữ ký chỉ có 120x40 px; cần ít nhất 150x50 px.',
+    );
+    expect(say('The signature image must be at most 2097152 bytes')).toBe('Ảnh chữ ký tối đa 2 MB.');
+    expect(say('File too large', 413)).toBe('Tệp vượt quá dung lượng cho phép.');
+    expect(say('taxCode must be 10 digits, or 10 digits followed by "-" and 3 digits')).toContain('Mã số thuế gồm 10 chữ số');
+    expect(say('The project has no production budget left to sign this contract for; ask the Admin to add budget', 409)).toContain(
+      'không còn ngân sách sản xuất',
+    );
   });
 
   it('reports a network failure in Vietnamese', async () => {
@@ -62,12 +77,17 @@ describe('portalApi', () => {
     const fetchImpl = fakeFetch(200, {});
     const api = portalApi(BASE, 'tok', fetchImpl);
     await api.me();
-    const pdf = new File(['%PDF'], 'ky.pdf', { type: 'application/pdf' });
-    await api.proposeCost('c1', 170_000_000, pdf);
-    await api.signContract('c1', pdf);
-    await api.counterCost('c1', 150_000_000, pdf);
+    await api.profile();
+    const profile = { address: 'Số 1', taxCode: '0312345678', bankAccount: '0123456', bankName: 'ACB', representativeTitle: 'GĐ' };
+    await api.updateProfile(profile);
+    const signature = new File(['png'], 'ky.png', { type: 'image/png' });
+    await api.proposeCost('c1', 170_000_000, signature);
+    await api.signContract('c1', signature);
+    await api.counterCost('c1', 150_000_000, signature);
     await api.project('p/1');
-    await api.notifications(5);
+    await api.notifications(5, 2);
+    await api.unreadCount();
+    await api.markRead('n/1');
     await api.markAllRead();
     await api.retryDelivery('m/1');
     const bodyOf = (body: unknown) =>
@@ -75,11 +95,15 @@ describe('portalApi', () => {
     const calls = fetchImpl.mock.calls.map(([url, init]) => [init?.method, url.replace(BASE, ''), bodyOf(init?.body)]);
     expect(calls).toEqual([
       ['GET', '/studio-portal/me', undefined],
+      ['GET', '/studio-portal/profile', undefined],
+      ['PUT', '/studio-portal/profile', JSON.stringify(profile)],
       ['POST', '/studio-portal/contracts/c1/propose', 'form:file,costVnd:170000000'],
       ['POST', '/studio-portal/contracts/c1/sign', 'form:file:null'],
       ['POST', '/studio-portal/contracts/c1/counter', 'form:file,costVnd:150000000'],
       ['GET', '/studio-portal/projects/p%2F1', undefined],
-      ['GET', '/notifications?limit=5&page=1', undefined],
+      ['GET', '/notifications?limit=5&page=2', undefined],
+      ['GET', '/notifications/unread-count', undefined],
+      ['PATCH', '/notifications/n%2F1/read', undefined],
       ['PATCH', '/notifications/read-all', undefined],
       ['POST', '/studio-portal/media-assets/m%2F1/retry', undefined],
     ]);

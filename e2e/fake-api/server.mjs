@@ -16,7 +16,7 @@ const send = (res, status, body) => {
 };
 const fail = (res, status, code, message) => send(res, status, { error: { code, message } });
 
-/** JSON or multipart (signed PDF + costVnd) bodies, read loosely as the tests need. */
+/** JSON or multipart (signature image + costVnd) bodies, read loosely as the tests need. */
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -34,6 +34,17 @@ async function readBody(req) {
 }
 
 const PDF = '%PDF-1.4\n% fake signed contract\n%%EOF';
+
+/** The contract number the API prints on a round and puts in each of its file names. */
+const contractNo = (c) => `AIC-${new Date(c.createdAt).getUTCFullYear()}-${c.id.slice(0, 8).toUpperCase()}-R${c.round}`;
+const COPY_NAMES = { ADMIN: 'hop-dong-ai-cinema-da-ky', STUDIO: 'hop-dong-studio-da-ky', FINAL: 'hop-dong-du-chu-ky' };
+
+const LEGAL_FIELDS = ['address', 'taxCode', 'bankAccount', 'bankName', 'representativeTitle'];
+/** GET /studio-portal/profile: the studio with what still blocks signing, as the real API answers it. */
+function profileView() {
+  const missing = [...LEGAL_FIELDS, 'contactName'].filter((field) => !db.studio[field]);
+  return { ...db.studio, missing, complete: missing.length === 0 };
+}
 
 function issueSession() {
   const accessToken = `access-${randomUUID()}`;
@@ -78,7 +89,7 @@ const CONTRACT_MOVES = {
   sign: {
     from: 'ADMIN_COUNTERED',
     apply: (c) => {
-      c.documents = [...(c.documents ?? []), document('FINAL', 'hop-dong-final.pdf')];
+      c.documents = [...(c.documents ?? []), document('FINAL', c)];
       return Object.assign(c, { status: 'SIGNED', studioSignedAt: now() });
     },
   },
@@ -88,18 +99,37 @@ const CONTRACT_MOVES = {
   },
 };
 
-function document(side, fileName) {
+function document(side, contract) {
+  const fileName = `${COPY_NAMES[side]}-${contractNo(contract)}.pdf`;
   return { id: randomUUID(), side, fileName, sizeBytes: PDF.length, checksum: 'fake', uploadedAt: now() };
 }
 
 function contractMove(res, contractId, move, body) {
   const contract = db.contracts.find((c) => c.id === contractId);
   if (!contract) return fail(res, 404, 'NOT_FOUND', 'Contract not found');
-  if (!body.fileName) return fail(res, 400, 'BAD_REQUEST', 'Attach the signed contract PDF in the "file" field');
+  if (!/\.(png|jpe?g)$/i.test(body.fileName ?? '')) {
+    return fail(res, 400, 'BAD_REQUEST', 'Attach the signature image (PNG or JPEG) in the "file" field');
+  }
   const rule = CONTRACT_MOVES[move];
-  if (contract.status !== rule.from) return fail(res, 409, 'CONFLICT', `The contract is ${contract.status}, it cannot ${move}`);
+  if (contract.status !== rule.from) {
+    const verb = move === 'counter' ? 'answer with another price' : 'sign';
+    return fail(res, 409, 'CONFLICT', `Cannot ${verb} a contract that is ${contract.status} (expected ${rule.from})`);
+  }
+  if (move === 'counter' && body.costVnd === contract.costVnd) {
+    return fail(res, 400, 'BAD_REQUEST', 'The new cost is the same as the cost of this round; sign the round instead');
+  }
+  const { missing } = profileView();
+  if (missing.length) {
+    const message = `The studio legal profile is incomplete (${missing.join(', ')}); complete it before signing the contract`;
+    return send(res, 409, { error: { code: 'CONFLICT', message, details: { reason: 'STUDIO_PROFILE_INCOMPLETE', missing } } });
+  }
+  // A round the Admin signed before signature images: nothing to draw beside the studio's signature.
+  if (move === 'sign' && contract.missingSignature) {
+    const message = "The other side's signature image of this round is missing; the round must be sent again";
+    return send(res, 409, { error: { code: 'CONFLICT', message, details: { reason: 'COUNTERPART_SIGNATURE_MISSING' } } });
+  }
   const updated = rule.apply(contract, body.costVnd) ?? contract;
-  updated.documents = [...(updated.documents ?? []).filter((d) => d.side !== 'STUDIO'), document('STUDIO', body.fileName)];
+  updated.documents = [...(updated.documents ?? []).filter((d) => d.side !== 'STUDIO'), document('STUDIO', updated)];
   updated.updatedAt = now();
   return send(res, 201, withRefs(updated));
 }
@@ -146,9 +176,25 @@ async function route(req, res) {
   const method = req.method;
   const body = await readBody(req);
 
+  let match;
   if (method === 'GET' && path === '/__health') return send(res, 200, { ok: true });
   if (method === 'POST' && path === '/__test/reset') {
     db = seed();
+    return send(res, 204);
+  }
+  // What the Admin does on its own portal while the studio is on a page: move a round on, or notify the studio.
+  if (method === 'POST' && (match = path.match(/^\/__test\/contracts\/([^/]+)$/))) {
+    Object.assign(db.contracts.find((c) => c.id === match[1]), body, { updatedAt: now() });
+    return send(res, 204);
+  }
+  if (method === 'POST' && path === '/__test/profile') {
+    Object.assign(db.studio, body);
+    return send(res, 204);
+  }
+  if (method === 'POST' && path === '/__test/notifications') {
+    for (let n = 1; n <= body.count; n += 1) {
+      db.notifications.unshift({ id: randomUUID(), type: 'CONTRACT_UPDATED', title: `Thông báo thử ${n}`, body: null, link: '/projects', readAt: null, createdAt: now() });
+    }
     return send(res, 204);
   }
   if (method === 'POST' && path === '/auth/login') {
@@ -167,8 +213,12 @@ async function route(req, res) {
   const token = (req.headers.authorization ?? '').replace(/^Bearer /, '');
   if (!tokens.access.has(token)) return fail(res, 401, 'UNAUTHORIZED', 'Invalid token');
 
-  let match;
   if (method === 'GET' && path === '/studio-portal/me') return send(res, 200, db.studio);
+  if (method === 'GET' && path === '/studio-portal/profile') return send(res, 200, profileView());
+  if (method === 'PUT' && path === '/studio-portal/profile') {
+    for (const field of LEGAL_FIELDS) db.studio[field] = body[field];
+    return send(res, 200, profileView());
+  }
   if (method === 'GET' && path === '/studio-portal/contracts') {
     return send(res, 200, [...db.contracts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(withRefs));
   }
@@ -177,7 +227,7 @@ async function route(req, res) {
   }
   if (method === 'GET' && (match = path.match(/^\/studio-portal\/contracts\/([^/]+)\/template$/))) {
     if (!db.contracts.some((c) => c.id === match[1])) return fail(res, 404, 'NOT_FOUND', 'Contract not found');
-    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="hop-dong-${match[1]}.pdf"` });
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="hop-dong-chua-ky-${contractNo(db.contracts.find((c) => c.id === match[1]))}.pdf"` });
     return res.end(PDF);
   }
   if (method === 'GET' && (match = path.match(/^\/studio-portal\/contracts\/([^/]+)\/documents\/(ADMIN|STUDIO|FINAL)\/content$/))) {
@@ -201,7 +251,19 @@ async function route(req, res) {
   if (method === 'POST' && (match = path.match(/^\/studio-portal\/media-assets\/([^/]+)\/retry$/))) return retry(res, match[1]);
   if (method === 'GET' && path === '/notifications') {
     const limit = Number(url.searchParams.get('limit') ?? 20);
-    return send(res, 200, { data: db.notifications.slice(0, limit), meta: { itemsPerPage: limit, totalItems: db.notifications.length, currentPage: 1, totalPages: 1 } });
+    const page = Number(url.searchParams.get('page') ?? 1);
+    const totalItems = db.notifications.length;
+    const data = db.notifications.slice((page - 1) * limit, page * limit);
+    return send(res, 200, { data, meta: { itemsPerPage: limit, totalItems, currentPage: page, totalPages: Math.max(1, Math.ceil(totalItems / limit)) } });
+  }
+  if (method === 'GET' && path === '/notifications/unread-count') {
+    return send(res, 200, { unread: db.notifications.filter((item) => !item.readAt).length });
+  }
+  if (method === 'PATCH' && (match = path.match(/^\/notifications\/([^/]+)\/read$/))) {
+    const item = db.notifications.find((n) => n.id === match[1]);
+    if (!item) return fail(res, 404, 'NOT_FOUND', 'Notification not found');
+    item.readAt ??= now();
+    return send(res, 204);
   }
   if (method === 'PATCH' && path === '/notifications/read-all') {
     const unread = db.notifications.filter((item) => !item.readAt);

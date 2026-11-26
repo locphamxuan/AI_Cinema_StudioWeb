@@ -17,7 +17,7 @@ export interface AuthSession {
 
 export type ContractDocumentSide = 'ADMIN' | 'STUDIO' | 'FINAL';
 
-/** A signed contract PDF of a round (metadata only; the file is downloaded through /api/contracts/...). */
+/** A signed copy of a round rendered by the system (metadata only; downloaded through /api/contracts/...). */
 export interface ContractDocument {
   id: string;
   side: ContractDocumentSide;
@@ -33,6 +33,29 @@ export interface StudioProfile {
   email: string | null;
   contactName: string | null;
   phone: string | null;
+}
+
+/** A field of the studio's legal profile; contactName is kept by the Admin, the others by the studio itself. */
+export type LegalProfileField = 'address' | 'taxCode' | 'bankAccount' | 'bankName' | 'representativeTitle' | 'contactName';
+
+/** What the studio fills in on the Hồ sơ pháp lý page: Bên B of every contract it signs. */
+export interface LegalProfileInput {
+  address: string;
+  taxCode: string;
+  bankAccount: string;
+  bankName: string;
+  representativeTitle: string;
+}
+
+/** GET /studio-portal/profile: the studio, its legal profile and what still blocks signing. */
+export interface StudioLegalProfile extends StudioProfile {
+  address: string | null;
+  taxCode: string | null;
+  bankAccount: string | null;
+  bankName: string | null;
+  representativeTitle: string | null;
+  missing: LegalProfileField[];
+  complete: boolean;
 }
 
 export type ContractStatus = 'SENT' | 'STUDIO_SIGNED' | 'ADMIN_COUNTERED' | 'SIGNED' | 'SUPERSEDED';

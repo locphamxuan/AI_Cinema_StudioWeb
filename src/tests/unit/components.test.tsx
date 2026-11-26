@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Contract, PortalEpisode } from '@/lib/api/types';
+import type { Contract, LegalProfileField, PortalEpisode } from '@/lib/api/types';
 
 const actOnContract = vi.fn(async () => ({}));
 vi.mock('@/app/actions/contracts', () => ({ actOnContract: (...args: unknown[]) => actOnContract(...(args as [])) }));
@@ -51,113 +51,169 @@ const episode = (over: Partial<PortalEpisode>): PortalEpisode => ({
   ...over,
 });
 
+/** jsdom decodes no image: the fake reports the size the test sets, as the browser would after loading it. */
+let imageSize = { width: 600, height: 200 };
+class FakeImage {
+  naturalWidth = 0;
+  naturalHeight = 0;
+  onload: (() => void) | null = null;
+  set src(_url: string) {
+    this.naturalWidth = imageSize.width;
+    this.naturalHeight = imageSize.height;
+    setTimeout(() => this.onload?.());
+  }
+}
+vi.stubGlobal('Image', FakeImage);
+URL.createObjectURL = vi.fn(() => 'blob:chu-ky');
+URL.revokeObjectURL = vi.fn();
+
+const card = (over: Partial<Contract>, missingProfile: LegalProfileField[] = []) => (
+  <ContractRound
+    group={{ projectId: 'p1', title: 'Hành trình ánh sáng', rounds: [contract(over)] }}
+    withActions
+    missingProfile={missingProfile}
+  />
+);
+const signatureInput = () => screen.getByLabelText(/Ảnh chữ ký của Studio/);
+const png = (name = 'chu-ky.png') => new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], name, { type: 'image/png' });
+
 describe('ContractRound', () => {
+  beforeEach(() => {
+    imageSize = { width: 600, height: 200 };
+  });
+
   it('lets the studio agree with or counter the Admin cost', async () => {
-    render(<ContractRound contract={contract({})} />);
+    render(card({}));
+    expect(screen.getByRole('heading', { name: 'Hành trình ánh sáng' })).toBeInTheDocument();
     expect(screen.getByText('Admin đề xuất giá – chờ Studio')).toBeInTheDocument();
     expect(screen.getAllByText('150.000.000 VND').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Đồng ý giá và ký' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Đề xuất giá khác' }));
-    expect(screen.getByPlaceholderText('Ví dụ: 170.000.000')).toBeInTheDocument();
     await userEvent.type(screen.getByPlaceholderText('Ví dụ: 170.000.000'), '1500');
     expect(screen.getByText('Giá phải là bội số của 1.000 VND.')).toBeInTheDocument();
   });
 
-  it('checks the signed PDF in the browser before asking to confirm', async () => {
-    render(<ContractRound contract={contract({})} />);
-    const input = screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/);
-    await userEvent.upload(input, new File(['x'], 'scan.png', { type: 'image/png' }), { applyAccept: false });
-    expect(screen.getByRole('alert')).toHaveTextContent('Hợp đồng đã ký phải là file PDF.');
-    const big = new File(['x'], 'ky.pdf', { type: 'application/pdf' });
-    Object.defineProperty(big, 'size', { value: 11 * 1024 * 1024 });
-    await userEvent.upload(input, big);
-    expect(screen.getByRole('alert')).toHaveTextContent('File PDF tối đa 10 MB.');
+  it('checks the signature image in the browser: type, weight and size in pixels', async () => {
+    render(card({}));
+    await userEvent.upload(signatureInput(), new File(['%PDF'], 'hop-dong.pdf', { type: 'application/pdf' }), {
+      applyAccept: false,
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent('Ảnh chữ ký phải là file PNG hoặc JPG.');
+    const heavy = png();
+    Object.defineProperty(heavy, 'size', { value: 3 * 1024 * 1024 });
+    await userEvent.upload(signatureInput(), heavy);
+    expect(screen.getByRole('alert')).toHaveTextContent('Ảnh chữ ký tối đa 2 MB.');
+    imageSize = { width: 100, height: 40 };
+    await userEvent.upload(signatureInput(), png());
+    expect(await screen.findByText(/Ảnh chữ ký quá nhỏ \(100x40 px\)/)).toBeInTheDocument();
   });
 
-  it('shows the cost and the signed PDF in a confirmation before signing', async () => {
-    // jsdom does not see files set by userEvent.upload as filling a required input; browsers do.
+  it('previews the signature, then shows the cost and the image in a confirmation', async () => {
     vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
-    render(<ContractRound contract={contract({})} />);
-    await userEvent.upload(
-      screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/),
-      new File(['%PDF-1.4'], 'ky.pdf', { type: 'application/pdf' }),
-    );
+    render(card({}));
+    await userEvent.upload(signatureInput(), png());
+    expect(await screen.findByRole('img', { name: 'Xem trước chữ ký của Studio' })).toHaveAttribute('src', 'blob:chu-ky');
     await userEvent.click(screen.getByLabelText('Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.'));
     await userEvent.click(screen.getByRole('button', { name: 'Đồng ý giá và ký' }));
     const dialog = screen.getByRole('dialog', { name: 'Đồng ý giá Admin và ký hợp đồng?' });
     expect(dialog).toHaveTextContent('150.000.000 VND');
-    expect(dialog).toHaveTextContent('ky.pdf');
+    expect(dialog).toHaveTextContent('chu-ky.png');
   });
 
-  const sentRound = () => contract({ status: 'SENT', costVnd: null, proposedBy: null, adminSignedAt: null });
-  async function attachSignedPdf() {
-    await userEvent.upload(
-      screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/),
-      new File(['%PDF-1.4'], 'ky.pdf', { type: 'application/pdf' }),
-    );
+  const sent = { status: 'SENT', costVnd: null, proposedBy: null, adminSignedAt: null } as const;
+  async function attachSignature() {
+    await userEvent.upload(signatureInput(), png());
+    await screen.findByRole('img', { name: 'Xem trước chữ ký của Studio' });
     await userEvent.click(screen.getByLabelText('Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.'));
   }
 
   it('shows the contract the studio received: its value at the budget, the steps and the unsigned PDF', () => {
-    render(<ContractRound contract={sentRound()} />);
-    expect(screen.getByText('Theo ngân sách của AI Cinema')).toBeInTheDocument();
+    render(card(sent));
+    expect(screen.getByText('Theo ngân sách')).toBeInTheDocument();
     expect(screen.getAllByText('200.000.000 VND')).toHaveLength(2);
     expect(screen.getByText(/Tải hợp đồng chưa ký về và đọc kỹ/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Tải hợp đồng chưa ký/ })).toHaveAttribute('href', '/api/contracts/c1/documents/TEMPLATE');
+    expect(screen.getByRole('link', { name: /Tải hợp đồng chưa ký/ })).toHaveAttribute(
+      'href',
+      '/api/contracts/c1/documents/TEMPLATE',
+    );
+  });
+
+  it('blocks signing with a link to the legal profile while it is incomplete', () => {
+    render(card(sent, ['taxCode', 'bankAccount']));
+    expect(screen.getByRole('alert')).toHaveTextContent('Còn thiếu: Mã số thuế, Số tài khoản.');
+    expect(screen.getByRole('link', { name: 'Hoàn thiện hồ sơ pháp lý' })).toHaveAttribute('href', '/profile');
+    expect(screen.queryByRole('button', { name: 'Ký hợp đồng' })).not.toBeInTheDocument();
   });
 
   it('links every signed copy of the round for download', () => {
     const doc = { fileName: 'k.pdf', sizeBytes: 10, checksum: 'x', uploadedAt: '2026-11-18T00:00:00.000Z' };
     render(
-      <ContractRound
-        contract={{ ...sentRound(), documents: [{ ...doc, id: 'd1', side: 'STUDIO' }, { ...doc, id: 'd2', side: 'FINAL' }] }}
-      />,
+      card({
+        ...sent,
+        documents: [
+          { ...doc, id: 'd1', side: 'STUDIO' },
+          { ...doc, id: 'd2', side: 'FINAL' },
+        ],
+      }),
     );
     expect(screen.getByRole('link', { name: 'Bản Studio đã ký' })).toHaveAttribute('href', '/api/contracts/c1/documents/STUDIO');
-    expect(screen.getByRole('link', { name: 'Bản cuối (đủ hai chữ ký)' })).toHaveAttribute('href', '/api/contracts/c1/documents/FINAL');
+    expect(screen.getByRole('link', { name: 'Bản đủ hai chữ ký' })).toHaveAttribute('href', '/api/contracts/c1/documents/FINAL');
   });
 
   it('signs at the budget by default, with no cost to type', async () => {
     vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
-    render(<ContractRound contract={sentRound()} />);
+    render(card(sent));
     expect(screen.queryByPlaceholderText('Ví dụ: 170.000.000')).not.toBeInTheDocument();
-    await attachSignedPdf();
-    await userEvent.click(screen.getByRole('button', { name: 'Gửi hợp đồng đã ký' }));
-    expect(screen.getByRole('dialog', { name: 'Gửi hợp đồng Studio đã ký?' })).toHaveTextContent('200.000.000 VND');
+    await attachSignature();
+    await userEvent.click(screen.getByRole('button', { name: 'Ký hợp đồng' }));
+    expect(screen.getByRole('dialog', { name: 'Ký hợp đồng với chữ ký này?' })).toHaveTextContent('200.000.000 VND');
   });
 
   it('refuses a lower price that is in fact above the budget', async () => {
     vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
-    render(<ContractRound contract={sentRound()} />);
+    render(card(sent));
     await userEvent.click(screen.getByRole('button', { name: 'Đề xuất giá thấp hơn' }));
-    await attachSignedPdf();
+    await attachSignature();
     await userEvent.type(screen.getByPlaceholderText('Ví dụ: 170.000.000'), '250000000');
-    await userEvent.click(screen.getByRole('button', { name: 'Gửi hợp đồng đã ký' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Ký hợp đồng' }));
     expect(screen.getByText('Giá đề xuất vượt ngân sách trần 200.000.000 VND.')).toBeInTheDocument();
   });
 
   it('asks for confirmation when Enter is pressed in the cost field, and sends only once confirmed', async () => {
     vi.spyOn(HTMLFormElement.prototype, 'reportValidity').mockReturnValue(true);
     actOnContract.mockClear();
-    render(<ContractRound contract={sentRound()} />);
+    render(card(sent));
     await userEvent.click(screen.getByRole('button', { name: 'Đề xuất giá thấp hơn' }));
-    await attachSignedPdf();
+    await attachSignature();
     const cost = screen.getByPlaceholderText('Ví dụ: 170.000.000');
     await userEvent.type(cost, '120000000');
     // Enter in the only text field submits the form implicitly in browsers; jsdom needs the submit event fired.
     fireEvent.submit(cost.closest('form')!);
     fireEvent.submit(cost.closest('form')!);
-    const dialog = screen.getByRole('dialog', { name: 'Gửi hợp đồng Studio đã ký?' });
+    const dialog = screen.getByRole('dialog', { name: 'Ký hợp đồng với chữ ký này?' });
     expect(dialog).toHaveTextContent('120.000.000 VND');
     expect(actOnContract).not.toHaveBeenCalled();
     // jsdom's requestSubmit() validates against its own (empty) file list; the browser sees the uploaded file.
-    (screen.getByLabelText(/Hợp đồng Studio đã ký \(PDF/) as HTMLInputElement).required = false;
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Gửi hợp đồng đã ký' }));
+    (signatureInput() as HTMLInputElement).required = false;
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Ký hợp đồng' }));
     await waitFor(() => expect(actOnContract).toHaveBeenCalledTimes(1));
   });
 
+  it('refuses a JPEG renamed .png before the studio confirms', async () => {
+    render(card({}));
+    await userEvent.upload(signatureInput(), new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], 'chu-ky.png', { type: 'image/png' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('không khớp đuôi tệp');
+    expect(screen.queryByRole('img', { name: 'Xem trước chữ ký của Studio' })).not.toBeInTheDocument();
+  });
+
+  it('says there is no budget to sign for instead of offering to sign at 0 VND', () => {
+    render(card({ ...sent, budgetVnd: 0 }));
+    expect(screen.getByRole('alert')).toHaveTextContent('chưa còn ngân sách sản xuất');
+    expect(screen.queryByRole('button', { name: 'Ký hợp đồng' })).not.toBeInTheDocument();
+  });
+
   it('offers nothing on a round waiting for the Admin', () => {
-    render(<ContractRound contract={contract({ status: 'STUDIO_SIGNED', proposedBy: 'STUDIO', adminSignedAt: null, studioSignedAt: '2026-11-07T03:00:00Z' })} />);
+    render(card({ status: 'STUDIO_SIGNED', proposedBy: 'STUDIO', adminSignedAt: null, studioSignedAt: '2026-11-07T03:00:00Z' }));
     expect(screen.getByText('Studio đã ký – chờ Admin')).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });

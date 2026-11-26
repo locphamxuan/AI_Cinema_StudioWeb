@@ -3,25 +3,26 @@
 import { useActionState, useCallback, useRef, useState } from 'react';
 import { PenLine } from 'lucide-react';
 import { actOnContract, type ContractActionState } from '@/app/actions/contracts';
-import { checkSignedPdf, checkWithinBudget, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
+import { checkNewCost, checkWithinBudget, parseCostVnd, type ContractAction } from '@/lib/domain/contract';
 import { formatBytes, formatVnd } from '@/lib/format';
 import { ConfirmDialog } from './ConfirmDialog';
-import { BUTTON, BUTTON_GHOST, ErrorCard, INPUT, SuccessCard } from './ui';
+import { SignatureField } from './SignatureField';
+import { BUTTON, BUTTON_GHOST, ErrorCard, INPUT } from './ui';
 
 const SUBMIT_LABEL: Record<ContractAction, string> = {
-  propose: 'Gửi hợp đồng đã ký',
+  propose: 'Ký hợp đồng',
   sign: 'Đồng ý giá và ký',
   counter: 'Gửi đề xuất giá khác',
 };
 
 const CONFIRM_TITLE: Record<ContractAction, string> = {
-  propose: 'Gửi hợp đồng Studio đã ký?',
+  propose: 'Ký hợp đồng với chữ ký này?',
   sign: 'Đồng ý giá Admin và ký hợp đồng?',
   counter: 'Gửi đề xuất giá khác?',
 };
 
 const CONFIRM_NOTE: Record<ContractAction, string> = {
-  propose: 'Sau khi gửi, Studio không sửa được vòng này; Admin sẽ ký phần Bên A hoặc đề xuất giá khác.',
+  propose: 'Sau khi ký, Studio không sửa được vòng này; Admin sẽ ký phần Bên A hoặc đề xuất giá khác.',
   sign: 'Hợp đồng sẽ đủ hai chữ ký và không thể huỷ trên Studio Web.',
   counter: 'Một vòng mới được mở với giá này; Admin sẽ ký đồng ý hoặc đề xuất lại.',
 };
@@ -55,8 +56,9 @@ function CostField({ value, onChange }: { value: string; onChange: (value: strin
 }
 
 /**
- * The studio's move on a round waiting for it: upload its signed copy of the contract it was sent, at the budget
- * or at a lower cost (SENT), or agree with / counter the Admin (ADMIN_COUNTERED).
+ * The studio's move on a round waiting for it: sign the contract it was sent with its signature image, at the
+ * budget or at a lower cost (SENT), or agree with / counter the Admin (ADMIN_COUNTERED). The system draws the
+ * signature into the same contract, so the signed copy looks exactly like the one downloaded.
  */
 export function ContractActions({
   contractId,
@@ -74,27 +76,35 @@ export function ContractActions({
   const [priceMode, setPriceMode] = useState<PriceMode>('budget');
   const [cost, setCost] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [imageProblem, setImageProblem] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  /** React empties the form after each send; the chosen image and its preview go with it. */
+  const [resets, setResets] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
   /** Set only by the dialog's confirm button: any other submit (Enter in the cost field) goes through review(). */
   const confirmedRef = useRef(false);
   const closeConfirm = useCallback(() => setConfirming(false), []);
 
-  if (state.done) return <SuccessCard message={state.done} />;
+  // Signing at the ceiling needs one: an unfunded or fully committed budget leaves nothing to sign for (409 at the API).
+  if (actions.includes('propose') && budgetVnd <= 0) {
+    return <ErrorCard message="Dự án chưa còn ngân sách sản xuất để ký hợp đồng này. Vui lòng liên hệ Admin AI Cinema bổ sung ngân sách." />;
+  }
   const needsCost = mode === 'counter' || (mode === 'propose' && priceMode === 'lower');
   const parsedCost = parseCostVnd(cost);
   const signedCost = mode === 'sign' ? adminCost : mode === 'propose' && priceMode === 'budget' ? budgetVnd : null;
 
-  /** Checks the form in the browser first (the 10 MB limit included), then asks for confirmation. */
+  /** Checks the form in the browser first (the signature image included), then asks for confirmation. */
   function review() {
     const form = formRef.current;
+    if (imageProblem) return setProblem(imageProblem);
     if (!form?.reportValidity()) return;
-    const pdf = checkSignedPdf(file);
-    if (!pdf.ok) return setProblem(pdf.message);
+    if (!file) return setProblem('Vui lòng chọn ảnh chữ ký của Studio.');
     if (needsCost && !parsedCost.ok) return setProblem(parsedCost.message);
     const overBudget = needsCost && parsedCost.ok ? checkWithinBudget(parsedCost.value, budgetVnd) : null;
     if (overBudget) return setProblem(overBudget);
+    const unchanged = mode === 'counter' && parsedCost.ok ? checkNewCost(parsedCost.value, adminCost) : null;
+    if (unchanged) return setProblem(unchanged);
     setProblem(null);
     setConfirming(true);
   }
@@ -114,7 +124,17 @@ export function ContractActions({
   }
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-background p-4 sm:p-5">
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={onSubmit}
+      onReset={() => {
+        setFile(null);
+        setImageProblem(null);
+        setResets((count) => count + 1);
+      }}
+      className="space-y-4 rounded-lg border border-border bg-background p-4 sm:p-5"
+    >
       <input type="hidden" name="contractId" value={contractId} />
       <input type="hidden" name="action" value={mode} />
       <input type="hidden" name="priceMode" value={priceMode} />
@@ -154,25 +174,14 @@ export function ContractActions({
         </p>
       )}
       {needsCost && <CostField value={cost} onChange={setCost} />}
-      <label className="block space-y-1.5 text-sm">
-        <span className="block text-xs font-semibold text-muted">Hợp đồng Studio đã ký (PDF, tối đa 10 MB)</span>
-        <input
-          name="file"
-          type="file"
-          accept="application/pdf,.pdf"
-          required
-          onChange={(event) => {
-            const chosen = event.target.files?.[0] ?? null;
-            setFile(chosen);
-            const check = chosen ? checkSignedPdf(chosen) : null;
-            setProblem(check && !check.ok ? check.message : null);
-          }}
-          className={`${INPUT} file:mr-3 file:rounded-full file:border-0 file:bg-accent file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white dark:file:text-slate-900`}
-        />
-        <span className="block text-xs text-muted">
-          Tải lên đúng hợp đồng đã tải về{needsCost ? ', sửa giá trị thành giá đã nhập' : ''}, có chữ ký và con dấu của Studio; file của dự án khác bị từ chối.
-        </span>
-      </label>
+      <SignatureField
+        key={resets}
+        onChange={(chosen, issue) => {
+          setFile(chosen);
+          setImageProblem(issue);
+          setProblem(issue);
+        }}
+      />
       <label className="flex items-start gap-2.5 text-sm cursor-pointer">
         <input type="checkbox" name="agree" required className="mt-0.5 h-4 w-4 accent-[var(--accent)]" />
         <span>Tôi đã đọc điều khoản và ký hợp đồng thay mặt Studio.</span>
@@ -189,7 +198,7 @@ export function ContractActions({
         </p>
         {file && (
           <p className="break-words">
-            Hợp đồng đã ký: <strong>{file.name}</strong> ({formatBytes(file.size)})
+            Ảnh chữ ký: <strong>{file.name}</strong> ({formatBytes(file.size)})
           </p>
         )}
         <p className="text-muted">{CONFIRM_NOTE[mode]}</p>

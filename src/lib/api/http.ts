@@ -15,7 +15,7 @@ export class ApiError extends Error {
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 export interface ApiRequest {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   token?: string;
   /** Sent as JSON. */
   json?: unknown;
