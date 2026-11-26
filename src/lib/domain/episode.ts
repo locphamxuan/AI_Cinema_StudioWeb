@@ -8,7 +8,7 @@ export const EPISODE_STATUS_LABEL: Record<EpisodeStatus, string> = {
   CHANGES_REQUESTED: 'Reviewer yêu cầu sửa',
   APPROVED: 'Đã duyệt',
   LABELED: 'Đã gắn nhãn AI',
-  COMPLIANCE_PASSED: 'Đạt kiểm tra tuân thủ',
+  COMPLIANCE_PASSED: 'Đạt kiểm tra pháp lý',
   SCHEDULED: 'Đã hẹn giờ phát hành',
   PUBLISHED: 'Đã phát hành',
   UNPUBLISHED: 'Đã gỡ',
@@ -17,7 +17,7 @@ export const EPISODE_STATUS_LABEL: Record<EpisodeStatus, string> = {
 export const INGEST_STATUS_LABEL: Record<IngestStatus, string> = {
   PENDING: 'Đang chờ xử lý',
   DOWNLOADING: 'Đang tải về',
-  TRANSCODING: 'Đang chuyển mã',
+  TRANSCODING: 'Đang xử lý video',
   VALIDATING: 'Đang kiểm tra',
   READY: 'Sẵn sàng',
   FAILED: 'Lỗi xử lý',

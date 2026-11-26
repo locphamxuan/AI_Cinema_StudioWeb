@@ -34,7 +34,7 @@ describe('apiRequest', () => {
     const error = await apiRequest(BASE, '/x', { fetchImpl }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 400, code: 'BAD_REQUEST', details: ['costVnd must be a multiple of 1,000 VND'] });
-    expect(describeError(error)).toBe('Dữ liệu gửi lên không hợp lệ. Số tiền phải là bội số của 1.000 VND.');
+    expect(describeError(error)).toBe('Dữ liệu gửi lên không hợp lệ. Số tiền phải tròn nghìn đồng.');
     // A validation detail the API words in English only is left out rather than shown in English.
     const unknown = new ApiError(400, 'BAD_REQUEST', 'The request is invalid', ['foo must be a bar']);
     expect(describeError(unknown)).toBe('Dữ liệu gửi lên không hợp lệ.');

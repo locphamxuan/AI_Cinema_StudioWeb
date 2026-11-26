@@ -90,7 +90,7 @@ describe('ContractRound', () => {
     expect(screen.getByRole('button', { name: 'Đồng ý giá và ký' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Đề xuất giá khác' }));
     await userEvent.type(screen.getByPlaceholderText('Ví dụ: 170.000.000'), '1500');
-    expect(screen.getByText('Giá phải là bội số của 1.000 VND.')).toBeInTheDocument();
+    expect(screen.getByText('Giá phải tròn nghìn đồng, ví dụ 170.000.000.')).toBeInTheDocument();
   });
 
   it('checks the signature image in the browser: type, weight and size in pixels', async () => {
@@ -131,7 +131,7 @@ describe('ContractRound', () => {
     render(card(sent));
     expect(screen.getByText('Theo ngân sách')).toBeInTheDocument();
     expect(screen.getAllByText('200.000.000 VND')).toHaveLength(2);
-    expect(screen.getByText(/Tải hợp đồng chưa ký về và đọc kỹ/)).toBeInTheDocument();
+    expect(screen.getByText(/Tải hợp đồng về, đọc kỹ tên phim/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Tải hợp đồng chưa ký/ })).toHaveAttribute(
       'href',
       '/api/contracts/c1/documents/TEMPLATE',
@@ -176,7 +176,7 @@ describe('ContractRound', () => {
     await attachSignature();
     await userEvent.type(screen.getByPlaceholderText('Ví dụ: 170.000.000'), '250000000');
     await userEvent.click(screen.getByRole('button', { name: 'Ký hợp đồng' }));
-    expect(screen.getByText('Giá đề xuất vượt ngân sách trần 200.000.000 VND.')).toBeInTheDocument();
+    expect(screen.getByText('Giá đề xuất vượt ngân sách tối đa 200.000.000 VND.')).toBeInTheDocument();
   });
 
   it('asks for confirmation when Enter is pressed in the cost field, and sends only once confirmed', async () => {
@@ -254,7 +254,7 @@ describe('retrying a failed delivery', () => {
     retryDelivery.mockResolvedValueOnce({ error: 'Không thể thực hiện ở trạng thái hiện tại: newer delivery' });
     render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
     await userEvent.click(screen.getByRole('button', { name: 'Xử lý lại' }));
-    const dialog = screen.getByRole('dialog', { name: 'Xử lý lại phiên bản 2?' });
+    const dialog = screen.getByRole('dialog', { name: 'Xử lý lại bản 2?' });
     expect(retryDelivery).not.toHaveBeenCalled();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Xử lý lại' }));
     await waitFor(() => expect(retryDelivery).toHaveBeenCalled());
@@ -263,11 +263,11 @@ describe('retrying a failed delivery', () => {
   });
 
   it('confirms once the delivery is sent back to processing', async () => {
-    retryDelivery.mockResolvedValueOnce({ done: 'Đã gửi bản phim đi xử lý lại.' });
+    retryDelivery.mockResolvedValueOnce({ done: 'Đang xử lý lại video.' });
     render(<EpisodeCard projectId="p1" episode={failed()} contractSigned />);
     await userEvent.click(screen.getByRole('button', { name: 'Xử lý lại' }));
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Xử lý lại' }));
-    expect(await screen.findByRole('status')).toHaveTextContent('Đã gửi bản phim đi xử lý lại.');
+    expect(await screen.findByRole('status')).toHaveTextContent('Đang xử lý lại video.');
   });
 
   it('sends nothing when the studio goes back from the confirmation', async () => {

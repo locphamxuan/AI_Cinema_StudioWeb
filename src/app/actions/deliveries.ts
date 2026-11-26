@@ -21,5 +21,5 @@ export async function retryDelivery(_previous: RetryDeliveryState, form: FormDat
     return { error: describeError(error) };
   }
   revalidatePath('/', 'layout');
-  return { done: 'Đã gửi bản phim đi xử lý lại. Trạng thái sẽ cập nhật trên trang này.' };
+  return { done: 'Đang xử lý lại video. Trạng thái sẽ cập nhật trên trang này.' };
 }

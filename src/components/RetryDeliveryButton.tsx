@@ -33,7 +33,7 @@ export function RetryDeliveryButton({ mediaAssetId, version }: { mediaAssetId: s
       </button>
       <ConfirmDialog
         open={confirming}
-        title={`Xử lý lại phiên bản ${version}?`}
+        title={`Xử lý lại bản ${version}?`}
         confirmLabel="Xử lý lại"
         onCancel={closeConfirm}
         onConfirm={() => {
@@ -42,7 +42,7 @@ export function RetryDeliveryButton({ mediaAssetId, version }: { mediaAssetId: s
           formRef.current?.requestSubmit();
         }}
       >
-        <p>AI Cinema tải và chuyển mã lại bản phim này từ nguồn đã nộp. Nếu lỗi do link, hãy sửa tệp ở link đó trước.</p>
+        <p>AI Cinema xử lý lại video từ tệp hoặc link đã nộp. Nếu lỗi do link, hãy sửa tệp ở link đó trước.</p>
         <p className="text-muted">Muốn đổi sang tệp hoặc link khác, dùng nút Nộp lại phim.</p>
       </ConfirmDialog>
     </form>

@@ -97,7 +97,7 @@ test('a round the Admin moved on meanwhile is not signed: the page reloads and s
   const moved = await request.post(`${FAKE_API_URL}/__test/contracts/0b6f0c1e-7777-4a6b-9c55-000000000002`, { data: { status: 'SUPERSEDED' } });
   expect(moved.status()).toBe(204);
   await confirmSign(page, 'Đồng ý giá và ký');
-  await expect(page.getByRole('main').getByRole('alert')).toContainText('Hợp đồng vừa được AI Cinema cập nhật');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('AI Cinema vừa thay đổi hợp đồng này nên chưa ký được.');
   await expect(project(page, 'Hành trình ánh sáng')).toHaveCount(0);
   await expect(page.getByRole('link', { name: /^Cần ký/ })).toContainText('1');
 });
@@ -135,7 +135,7 @@ test('proposes a lower cost on the contract just received', async ({ page }) => 
   const card = project(page, 'Mùa hạ cuối');
   await card.getByRole('button', { name: 'Đề xuất giá thấp hơn' }).click();
   await card.getByPlaceholder('Ví dụ: 170.000.000').fill('1500');
-  await expect(card.getByText('Giá phải là bội số của 1.000 VND.')).toBeVisible();
+  await expect(card.getByText('Giá phải tròn nghìn đồng, ví dụ 170.000.000.')).toBeVisible();
   await agree(card);
   await card.getByPlaceholder('Ví dụ: 170.000.000').fill('120000000');
   // Enter in the cost field must open the confirmation, not sign straight away.

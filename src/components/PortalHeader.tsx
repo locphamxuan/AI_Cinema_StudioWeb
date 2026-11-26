@@ -42,8 +42,8 @@ export function PortalHeader({
       label: 'Làm việc',
       items: [
         { href: '/', label: 'Tổng quan', ariaLabel: 'Tổng quan', icon: LayoutDashboard, badge: 0 },
-        { href: '/contracts', label: 'Hợp đồng & Báo giá', ariaLabel: 'Hợp đồng', icon: FileSignature, badge: waitingContracts },
-        { href: '/projects', label: 'Dự án sản xuất', ariaLabel: 'Dự án', icon: Clapperboard, badge: producingProjects },
+        { href: '/contracts', label: 'Hợp đồng', ariaLabel: 'Hợp đồng', icon: FileSignature, badge: waitingContracts },
+        { href: '/projects', label: 'Dự án', ariaLabel: 'Dự án', icon: Clapperboard, badge: producingProjects },
       ],
     },
     {

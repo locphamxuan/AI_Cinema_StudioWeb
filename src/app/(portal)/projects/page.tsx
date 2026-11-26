@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { ArrowRight, CalendarClock, Clapperboard } from 'lucide-react';
-import { Badge, CARD, EmptyNote, Guarded, PageTitle } from '@/components/ui';
+
+import { Badge, BUTTON, CARD, EmptyNote, Guarded, PageTitle } from '@/components/ui';
 import { CONTRACT_STATUS_LABEL, CONTRACT_STATUS_TONE } from '@/lib/domain/contract';
 import { PROJECT_STATUS_LABEL } from '@/lib/domain/episode';
 import { formatDateTime, formatVnd } from '@/lib/format';
@@ -32,23 +32,17 @@ async function Projects() {
               </div>
               <h2 className="text-lg font-bold tracking-tight text-foreground">{project.title}</h2>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted">
-                <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-                  <Clapperboard className="h-3.5 w-3.5 text-muted" aria-hidden="true" /> {project.episodeCount} tập
-                </span>
+                <span className="font-medium text-foreground">{project.episodeCount} tập</span>
                 {project.contract?.costVnd != null && (
                   <span className="font-mono font-semibold text-foreground">{formatVnd(project.contract.costVnd)}</span>
                 )}
                 {project.handedOffAt && (
-                  <span className="inline-flex items-center gap-1">
-                    <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" /> Nhận việc {formatDateTime(project.handedOffAt)}
-                  </span>
+                  <span>Nhận việc {formatDateTime(project.handedOffAt)}</span>
                 )}
               </div>
             </div>
             <div className="flex items-center justify-end border-t border-border pt-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white transition-all group-hover:bg-accent-dark dark:text-slate-900">
-                Mở dự án và nộp phim <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </span>
+              <span className={`${BUTTON} h-8 px-3 text-xs`}>Mở dự án</span>
             </div>
           </Link>
         </li>
@@ -60,7 +54,7 @@ async function Projects() {
 export default function ProjectsPage() {
   return (
     <>
-      <PageTitle title="Dự án" description="Dự án AI Cinema đã gửi hợp đồng cho Studio, và dự án Studio đã được giao để sản xuất." />
+      <PageTitle title="Dự án" />
       <Guarded load={() => Projects()} />
     </>
   );

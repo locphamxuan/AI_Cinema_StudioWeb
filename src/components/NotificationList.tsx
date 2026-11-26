@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Bell, CheckCheck, Clock } from 'lucide-react';
+
 import { markAllNotificationsRead, openNotification } from '@/app/actions/notifications';
 import type { Paginated, PortalNotification } from '@/lib/api/types';
 import { portalPath } from '@/lib/domain/notification';
@@ -16,16 +16,7 @@ function NotificationItem({ item }: { item: PortalNotification }) {
   );
   return (
     <li className="mb-2.5 flex items-start gap-3 rounded-2xl border border-slate-100 p-4 transition-all hover:bg-slate-50 dark:border-white/[0.06] dark:hover:bg-slate-900/40">
-      <span
-        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
-          item.readAt
-            ? 'bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-slate-400'
-            : 'bg-[#121212] text-white dark:bg-white dark:text-slate-900'
-        }`}
-        aria-hidden="true"
-      >
-        <Clock className="h-4 w-4" />
-      </span>
+      <span className={`mt-1.5 size-2 shrink-0 rounded-full ${item.readAt ? 'bg-border' : 'bg-amber-500 dark:bg-amber-400'}`} aria-hidden="true" />
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           {title}
@@ -57,7 +48,7 @@ export function NotificationList({ notifications, unread }: { notifications: Pag
     <section id="notifications" className={`${CARD} scroll-mt-6 p-6`}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-white/[0.06]">
         <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
-          <Bell className="h-4 w-4" aria-hidden="true" /> Thông báo
+          Thông báo
           {unread > 0 && <Badge tone="action">{unread} chưa đọc</Badge>}
         </h2>
         {unread > 0 && (
@@ -66,7 +57,7 @@ export function NotificationList({ notifications, unread }: { notifications: Pag
               pendingLabel="Đang đánh dấu…"
               className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-900 hover:underline dark:text-slate-400 dark:hover:text-white"
             >
-              <CheckCheck className="h-4 w-4" aria-hidden="true" /> Đánh dấu tất cả đã đọc
+              Đánh dấu tất cả đã đọc
             </PendingButton>
           </form>
         )}
@@ -81,7 +72,7 @@ export function NotificationList({ notifications, unread }: { notifications: Pag
         <EmptyNote>
           {page > 1
             ? 'Trang này không còn thông báo nào.'
-            : 'Chưa có thông báo. Khi Admin hoặc Reviewer cập nhật hợp đồng hay bản phim, thông báo sẽ hiện ở đây.'}
+            : 'Chưa có thông báo.'}
         </EmptyNote>
       )}
       {(pages > 1 || page > 1) && (
