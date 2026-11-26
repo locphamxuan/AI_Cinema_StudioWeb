@@ -8,7 +8,7 @@ const body = Be_Vietnam_Pro({ variable: '--font-face-body', subsets: ['latin', '
 
 export const metadata: Metadata = {
   title: 'Studio Web - AI Cinema',
-  description: 'Cổng làm việc của Studio đối tác: hợp đồng, dự án, nộp phim cho Reviewer của AI Cinema.',
+  description: 'Nơi Studio đối tác ký hợp đồng và nộp phim cho AI Cinema.',
 };
 
 export const viewport: Viewport = {

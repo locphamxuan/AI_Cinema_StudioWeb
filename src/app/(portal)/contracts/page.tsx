@@ -90,10 +90,7 @@ export default async function ContractsPage({
   const notice = toContractNotice(params.notice);
   return (
     <>
-      <PageTitle
-        title="Hợp đồng"
-        description="Tải hợp đồng đã điền sẵn ngân sách, ký bằng ảnh chữ ký (có thể đề xuất giá thấp hơn). Hợp đồng hoàn tất khi đủ chữ ký hai bên."
-      />
+      <PageTitle title="Hợp đồng" description="Đọc hợp đồng, rồi ký bằng ảnh chữ ký hoặc đề xuất giá thấp hơn." />
       {notice &&
         (CONTRACT_NOTICE[notice].ok ? (
           <SuccessCard message={CONTRACT_NOTICE[notice].text} />

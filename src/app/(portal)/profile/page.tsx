@@ -11,7 +11,7 @@ async function Profile() {
     <div className="grid gap-5 lg:grid-cols-[1fr_2fr]">
       <section className={`${CARD} space-y-4 p-5`}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold">Do Admin AI Cinema quản lý</h2>
+          <h2 className="text-base font-semibold">Admin AI Cinema nhập</h2>
           {profile.complete ? <Badge tone="done">Đủ để ký</Badge> : <Badge tone="action">Còn thiếu</Badge>}
         </div>
         <Facts
@@ -22,7 +22,7 @@ async function Profile() {
             ['Điện thoại', profile.phone ?? '-'],
           ]}
         />
-        <p className="text-xs leading-relaxed text-muted">Cần sửa các thông tin này? Liên hệ Admin AI Cinema.</p>
+        <p className="text-xs leading-relaxed text-muted">Muốn sửa, hãy liên hệ Admin AI Cinema.</p>
         {!profile.complete && (
           <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
             Còn thiếu: {profile.missing.map((field) => LEGAL_FIELD_LABEL[field]).join(', ')}.
@@ -40,10 +40,7 @@ async function Profile() {
 export default function ProfilePage() {
   return (
     <>
-      <PageTitle
-        title="Hồ sơ pháp lý"
-        description="Thông tin Bên B in trên mọi hợp đồng. Studio cần điền đủ trước khi ký hợp đồng."
-      />
+      <PageTitle title="Hồ sơ pháp lý" description="Thông tin Studio (Bên B) in trên hợp đồng. Điền đủ thì mới ký được." />
       <Guarded load={() => Profile()} />
     </>
   );

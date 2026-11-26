@@ -94,7 +94,7 @@ describe('submitFilm', () => {
     expect(await submitFilm('e1', input(), undefined, Xhr)).toEqual({
       ok: false,
       status: 403,
-      error: 'Không tải được phim lên kho lưu trữ. Kiểm tra mạng rồi thử lại.',
+      error: 'Không tải được phim lên máy chủ. Kiểm tra mạng rồi thử lại.',
     });
     expect(sent).toHaveLength(2);
   });

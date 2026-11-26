@@ -49,9 +49,8 @@ export function SessionWatcher({ accountId, cookieName }: SessionWatcherProps) {
   return (
     <div role="status" className="mx-auto mb-4 flex max-w-6xl items-start justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
       <span>
-        Một cửa sổ khác của trình duyệt này vừa đăng nhập tài khoản Studio khác, nên trang đã chuyển sang tài khoản đó.
-        Mỗi trình duyệt chỉ giữ một tài khoản Studio; muốn dùng song song, hãy mở tài khoản kia trong cửa sổ ẩn danh
-        hoặc hồ sơ Chrome khác.
+        Trình duyệt này vừa đăng nhập một tài khoản Studio khác nên trang đã chuyển sang tài khoản đó. Muốn dùng hai tài
+        khoản cùng lúc, hãy mở cửa sổ ẩn danh.
       </span>
       <button type="button" onClick={() => setSwitched(false)} className="shrink-0 font-semibold underline">
         Đã hiểu

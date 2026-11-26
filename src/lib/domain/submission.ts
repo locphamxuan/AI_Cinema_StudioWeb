@@ -38,15 +38,15 @@ export const FILM_MAX_BYTES = 2048 * 1024 * 1024;
 
 function linkProblem(raw: string): string | null {
   const value = raw.trim();
-  if (!value) return 'Vui lòng nhập đường dẫn phim.';
+  if (!value) return 'Vui lòng nhập link phim.';
   let url: URL;
   try {
     url = new URL(value);
   } catch {
-    return 'Đường dẫn phim phải là địa chỉ http(s) hợp lệ.';
+    return 'Link phim phải bắt đầu bằng http:// hoặc https://.';
   }
-  if (!['http:', 'https:'].includes(url.protocol)) return 'Đường dẫn phim phải là địa chỉ http(s) hợp lệ.';
-  if (value.length > URL_MAX) return `Đường dẫn phim tối đa ${URL_MAX} ký tự.`;
+  if (!['http:', 'https:'].includes(url.protocol)) return 'Link phim phải bắt đầu bằng http:// hoặc https://.';
+  if (value.length > URL_MAX) return `Link phim tối đa ${URL_MAX} ký tự.`;
   return null;
 }
 

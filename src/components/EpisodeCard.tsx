@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MessageSquareWarning, Upload } from 'lucide-react';
+
 import { Badge, BUTTON, type Tone } from './ui';
 import { RetryDeliveryButton } from './RetryDeliveryButton';
 import { canRetry, canSubmit, EPISODE_STATUS_LABEL, INGEST_STATUS_LABEL } from '@/lib/domain/episode';
@@ -47,7 +47,7 @@ export function EpisodeCard({ projectId, episode, contractSigned }: { projectId:
       {delivery ? (
         <div className="rounded-2xl border border-border bg-background p-4 text-sm">
           <p>
-            Bản nộp mới nhất: <strong>phiên bản {delivery.version}</strong> · {INGEST_STATUS_LABEL[delivery.ingestStatus] ?? delivery.ingestStatus} ·{' '}
+            Mới nhất: <strong>bản {delivery.version}</strong> · {INGEST_STATUS_LABEL[delivery.ingestStatus] ?? delivery.ingestStatus} ·{' '}
             {formatDateTime(delivery.createdAt)}
           </p>
           {delivery.failureReason && <p className="mt-1 text-red-600 dark:text-red-300">Lỗi xử lý: {inVietnamese(delivery.failureReason, 'Xử lý video không thành công. Hãy xử lý lại hoặc nộp bản khác.')}</p>}
@@ -59,14 +59,14 @@ export function EpisodeCard({ projectId, episode, contractSigned }: { projectId:
       {delivery?.changeRequest && (
         <div className="space-y-1.5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm dark:border-red-500/30 dark:bg-red-500/10">
           <p className="flex items-center gap-1.5 font-semibold text-red-700 dark:text-red-300">
-            <MessageSquareWarning className="h-4 w-4" aria-hidden="true" /> Reviewer yêu cầu sửa ({formatDateTime(delivery.changeRequest.createdAt)})
+            Reviewer yêu cầu sửa ({formatDateTime(delivery.changeRequest.createdAt)})
           </p>
           <p className="whitespace-pre-line">{delivery.changeRequest.comments || 'Không có ghi chú.'}</p>
         </div>
       )}
       {check.allowed ? (
         <Link href={`/projects/${projectId}/episodes/${episode.id}`} className={BUTTON}>
-          <Upload className="h-4 w-4" aria-hidden="true" /> {delivery ? 'Nộp lại phim' : 'Nộp phim'}
+          {delivery ? 'Nộp lại phim' : 'Nộp phim'}
         </Link>
       ) : (
         <p className="text-xs text-muted">{check.reason}</p>

@@ -27,6 +27,13 @@ export function formatVnd(amount: number | null | undefined): string {
   return amount === null || amount === undefined ? 'Chưa có giá' : `${NUMBER.format(amount)} VND`;
 }
 
+const LANGUAGES: Record<string, string> = { vi: 'Tiếng Việt', en: 'Tiếng Anh' };
+
+/** "vi" → "Tiếng Việt"; a code without a name is shown as sent. */
+export function languageLabel(code: string | null | undefined): string {
+  return code ? (LANGUAGES[code] ?? code) : '-';
+}
+
 /** 125 → "2 phút 5 giây" */
 export function formatDuration(seconds: number): string {
   const total = Math.max(0, Math.round(seconds));

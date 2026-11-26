@@ -78,7 +78,7 @@ export async function submitFilm(
   }
   const put = await send(Xhr, { method: 'PUT', url: upload.uploadUrl, body: file, headers: upload.headers }, onProgress);
   if (!ok(put.status)) {
-    return { ok: false, status: put.status, error: 'Không tải được phim lên kho lưu trữ. Kiểm tra mạng rồi thử lại.' };
+    return { ok: false, status: put.status, error: 'Không tải được phim lên máy chủ. Kiểm tra mạng rồi thử lại.' };
   }
   const { aiDisclosure, proposedLabelType, submissionNote } = buildLinkBody(input);
   const metadata = { aiDisclosure, proposedLabelType, ...(submissionNote ? { submissionNote } : {}) };
