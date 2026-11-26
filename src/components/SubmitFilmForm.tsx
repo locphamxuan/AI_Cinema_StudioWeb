@@ -15,8 +15,8 @@ import { BUTTON, ErrorCard, INPUT, SuccessCard } from './ui';
 
 const METHODS: { value: SourceMethod; label: string; hint: string }[] = [
   { value: 'UPLOAD', label: 'Tải tệp lên', hint: 'Tệp MP4 hoặc MOV từ máy tính.' },
-  { value: 'REMOTE_FILE', label: 'Link tệp video', hint: 'Đường dẫn http(s) tới tệp MP4/MOV, AI Cinema sẽ tải về.' },
-  { value: 'HLS_URL', label: 'Link HLS', hint: 'Đường dẫn playlist .m3u8 do Studio lưu trữ.' },
+  { value: 'REMOTE_FILE', label: 'Link tệp video', hint: 'Link tới tệp MP4/MOV, AI Cinema sẽ tự tải về.' },
+  { value: 'HLS_URL', label: 'Link HLS', hint: 'Link phát video (.m3u8) do Studio tự lưu trữ.' },
 ];
 
 const EMPTY_DISCLOSURE: AiDisclosure = { aiGeneratedParts: [], noRealPersonLikeness: false, noCopyrightedMaterial: false };
@@ -78,7 +78,7 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
   if (done) {
     return (
       <div className="space-y-3">
-        <SuccessCard message="Đã nộp phim cho Reviewer. AI Cinema đang xử lý video; trạng thái tập sẽ cập nhật trong trang dự án." />
+        <SuccessCard message="Đã nộp phim cho Reviewer. AI Cinema đang xử lý video." />
         <Link href={`/projects/${projectId}`} className={BUTTON}>Về trang dự án</Link>
       </div>
     );
@@ -118,7 +118,7 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
             inputMode="url"
             autoComplete="off"
             spellCheck={false}
-            aria-label="Đường dẫn phim"
+            aria-label="Link phim"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             className={INPUT}
@@ -126,7 +126,7 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
           />
         )}
         {method === 'HLS_URL' && url.trim() && !looksLikeHls(url) && (
-          <p className="text-xs text-muted">Link HLS thường kết thúc bằng .m3u8; hãy kiểm tra lại nếu đây không phải playlist.</p>
+          <p className="text-xs text-muted">Link HLS thường kết thúc bằng .m3u8, hãy kiểm tra lại.</p>
         )}
       </fieldset>
       <AiDisclosureFields disclosure={disclosure} onDisclosure={setDisclosure} labelType={labelType} onLabelType={setLabelType} />
@@ -163,7 +163,7 @@ export function SubmitFilmForm({ projectId, episodeId }: { projectId: string; ep
         <p>
           Nhãn AI đề xuất: <strong>{LABEL_TYPES.find((item) => item.value === labelType)?.label ?? '-'}</strong>
         </p>
-        <p className="text-muted">Bản nộp mới thành phiên bản mới để Reviewer duyệt (bản cũ vẫn được lưu); tập chuyển sang trạng thái Đang xử lý video.</p>
+        <p className="text-muted">Đây là một bản mới để Reviewer duyệt; bản cũ vẫn được lưu.</p>
       </ConfirmDialog>
     </form>
   );

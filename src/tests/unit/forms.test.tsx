@@ -94,7 +94,7 @@ describe('SubmitFilmForm', () => {
     submitFilm.mockResolvedValue({ ok: true });
     render(<SubmitFilmForm projectId="p1" episodeId="e1" />);
     await userEvent.click(screen.getByLabelText(/Link HLS/));
-    await userEvent.type(screen.getByLabelText('Đường dẫn phim'), 'https://cdn.studio.vn/tap-1/master.m3u8');
+    await userEvent.type(screen.getByLabelText('Link phim'), 'https://cdn.studio.vn/tap-1/master.m3u8');
     await fillDisclosure();
     await userEvent.click(screen.getByRole('button', { name: /Nộp phim cho Reviewer/ }));
     const dialog = screen.getByRole('dialog', { name: 'Nộp phim cho Reviewer?' });
@@ -112,7 +112,7 @@ describe('SubmitFilmForm', () => {
       }),
       expect.any(Function),
     );
-    expect(screen.getByRole('status')).toHaveTextContent('Đã nộp phim cho Reviewer');
+    expect(screen.getByRole('status')).toHaveTextContent('Đã nộp phim cho Reviewer. AI Cinema đang xử lý video.');
     expect(screen.getByRole('link', { name: 'Về trang dự án' })).toHaveAttribute('href', '/projects/p1');
     // Refreshing would swap the confirmation for the closed-episode notice of the page.
     expect(router.refresh).not.toHaveBeenCalled();
@@ -122,7 +122,7 @@ describe('SubmitFilmForm', () => {
     submitFilm.mockResolvedValue({ ok: false, status: 401, error: 'Phiên đăng nhập đã hết hạn' });
     render(<SubmitFilmForm projectId="p1" episodeId="e1" />);
     await userEvent.click(screen.getByLabelText(/Link tệp video/));
-    await userEvent.type(screen.getByLabelText('Đường dẫn phim'), 'https://cdn.studio.vn/tap-1.mp4');
+    await userEvent.type(screen.getByLabelText('Link phim'), 'https://cdn.studio.vn/tap-1.mp4');
     await fillDisclosure();
     await userEvent.click(screen.getByRole('button', { name: /Nộp phim cho Reviewer/ }));
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Nộp phim' }));

@@ -24,7 +24,7 @@ const CONFIRM_TITLE: Record<ContractAction, string> = {
 const CONFIRM_NOTE: Record<ContractAction, string> = {
   propose: 'Sau khi ký, Studio không sửa được vòng này; Admin sẽ ký phần Bên A hoặc đề xuất giá khác.',
   sign: 'Hợp đồng sẽ đủ hai chữ ký và không thể huỷ trên Studio Web.',
-  counter: 'Một vòng mới được mở với giá này; Admin sẽ ký đồng ý hoặc đề xuất lại.',
+  counter: 'Giá này được gửi cho Admin; Admin sẽ ký đồng ý hoặc đề xuất lại.',
 };
 
 /** On the contract it was sent, the studio signs at the budget or asks for less. */
@@ -34,7 +34,7 @@ function CostField({ value, onChange }: { value: string; onChange: (value: strin
   const parsed = value ? parseCostVnd(value) : null;
   return (
     <label className="block space-y-1.5 text-sm">
-      <span className="block text-xs font-semibold text-muted">Giá sản xuất (VND, bội số 1.000)</span>
+      <span className="block text-xs font-semibold text-muted">Giá sản xuất (VND, tròn nghìn đồng)</span>
       <input
         name="costVnd"
         inputMode="numeric"

@@ -16,9 +16,9 @@ import type { LegalProfileField } from '@/lib/api/types';
 const PROPOSER: Record<'ADMIN' | 'STUDIO', string> = { ADMIN: 'Admin AI Cinema', STUDIO: 'Studio' };
 
 const SIGNING_STEPS = [
-  'Tải hợp đồng chưa ký về và đọc kỹ: tên phim, danh sách tập, hạn giao và ngân sách đã điền sẵn.',
-  'Chọn ảnh chữ ký của Studio và xem trước.',
-  'Xác nhận ký. Hệ thống đặt chữ ký vào ô Bên B của chính hợp đồng đó; Admin ký Bên A sau.',
+  'Tải hợp đồng về, đọc kỹ tên phim, danh sách tập, hạn giao và ngân sách.',
+  'Chọn ảnh chữ ký của Studio.',
+  'Bấm ký. Chữ ký được đặt vào ô Bên B, sau đó Admin ký Bên A.',
 ];
 
 const LINK = `${BUTTON_GHOST} h-8 px-3 text-xs`;
@@ -63,10 +63,10 @@ export function ContractRound({
         <Badge tone={CONTRACT_STATUS_TONE[contract.status]}>{CONTRACT_STATUS_LABEL[contract.status] ?? contract.status}</Badge>
       </header>
 
-      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <dl className="grid gap-2 sm:grid-cols-3">
         <Stat label="Giá trị hợp đồng">{formatVnd(contract.costVnd ?? contract.budgetVnd)}</Stat>
-        <Stat label="Ngân sách trần">{formatVnd(contract.budgetVnd)}</Stat>
-        <Stat label="Bên đề xuất giá">{contract.proposedBy ? PROPOSER[contract.proposedBy] : 'Theo ngân sách'}</Stat>
+        <Stat label="Ngân sách tối đa">{formatVnd(contract.budgetVnd)}</Stat>
+        <Stat label="Giá do ai đưa ra">{contract.proposedBy ? PROPOSER[contract.proposedBy] : 'Theo ngân sách'}</Stat>
       </dl>
 
       <dl className="grid gap-1 text-xs sm:grid-cols-2">
@@ -95,7 +95,7 @@ export function ContractRound({
       </div>
 
       <details className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
-        <summary className="cursor-pointer text-xs font-semibold">Ghi chú điều khoản</summary>
+        <summary className="cursor-pointer text-xs font-semibold">Điều khoản</summary>
         <p className="mt-2 whitespace-pre-line leading-relaxed text-muted">{contract.terms}</p>
       </details>
 

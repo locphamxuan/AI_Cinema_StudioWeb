@@ -199,7 +199,7 @@ describe('parseCostVnd', () => {
     ['abc', 'Giá chỉ gồm chữ số (VND).'],
     ['-5000', 'Giá chỉ gồm chữ số (VND).'],
     ['500', 'Giá tối thiểu là 1.000 VND.'],
-    ['1500', 'Giá phải là bội số của 1.000 VND.'],
+    ['1500', 'Giá phải tròn nghìn đồng, ví dụ 170.000.000.'],
     ['100000001000', 'Giá tối đa là 100.000.000.000 VND.'],
   ])('rejects %j', (input, message) => {
     expect(parseCostVnd(input)).toEqual({ ok: false, message });

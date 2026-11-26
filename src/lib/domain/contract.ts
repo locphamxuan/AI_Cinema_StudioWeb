@@ -44,7 +44,7 @@ export function parseCostVnd(input: string): CostParse {
   const value = Number(digits);
   if (value < MIN_COST_VND) return { ok: false, message: 'Giá tối thiểu là 1.000 VND.' };
   if (value > MAX_COST_VND) return { ok: false, message: 'Giá tối đa là 100.000.000.000 VND.' };
-  if (value % 1000 !== 0) return { ok: false, message: 'Giá phải là bội số của 1.000 VND.' };
+  if (value % 1000 !== 0) return { ok: false, message: 'Giá phải tròn nghìn đồng, ví dụ 170.000.000.' };
   return { ok: true, value };
 }
 
@@ -93,7 +93,7 @@ export function checkSignatureSize(width: number, height: number): string | null
 /** A quote above the budget ceiling is refused by the API too; saying it here spares a round trip. */
 export function checkWithinBudget(cost: number, budgetVnd: number): string | null {
   if (cost <= budgetVnd) return null;
-  return `Giá đề xuất vượt ngân sách trần ${new Intl.NumberFormat('vi-VN').format(budgetVnd)} VND.`;
+  return `Giá đề xuất vượt ngân sách tối đa ${new Intl.NumberFormat('vi-VN').format(budgetVnd)} VND.`;
 }
 
 /** A counter-offer at the price already on the table changes nothing: the API refuses it, so it is said here first. */
@@ -170,7 +170,7 @@ export const CONTRACT_NOTICE: Record<ContractNotice, { ok: boolean; text: string
   counter: { ok: true, text: 'Đã gửi đề xuất giá mới kèm chữ ký của Studio. Chờ Admin phản hồi.' },
   changed: {
     ok: false,
-    text: 'Hợp đồng vừa được AI Cinema cập nhật trong lúc Studio đang thao tác nên chưa ký được. Trang đã tải lại trạng thái mới nhất; hãy xem lại hợp đồng rồi thao tác lại.',
+    text: 'AI Cinema vừa thay đổi hợp đồng này nên chưa ký được. Hãy xem lại hợp đồng mới rồi ký lại.',
   },
 };
 

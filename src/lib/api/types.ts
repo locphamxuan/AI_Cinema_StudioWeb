@@ -140,10 +140,21 @@ export interface StudioPoster {
   uploadedAt: string;
 }
 
+/** An idea or synopsis file the Content Reviewer attached to the project. */
+export interface StudioIdeaFile {
+  id: string;
+  fileName: string;
+  purpose: 'IDEA' | 'SYNOPSIS';
+  version: number;
+  sizeBytes: number;
+  createdAt: string;
+}
+
 export interface ProjectDetail {
   id: string;
   status: ProjectStatus;
   ideaDescription: string;
+  ideaFiles: StudioIdeaFile[];
   handedOffAt: string | null;
   title: string;
   synopsis: string | null;

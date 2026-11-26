@@ -73,6 +73,16 @@ function project(id, title, status, episodes, fields = {}) {
     ageRating: 'T13',
     defaultLanguage: 'vi',
     finalScript: { version: 1, content: `Kịch bản Final của ${title}` },
+    ideaFiles: [
+      {
+        id: '0b6f0c1e-5555-4a6b-9c55-000000000001',
+        fileName: 'y-tuong.pdf',
+        purpose: 'IDEA',
+        version: 1,
+        sizeBytes: 2048,
+        createdAt: '2026-11-01T02:00:00.000Z',
+      },
+    ],
     episodes,
     ...fields,
   };

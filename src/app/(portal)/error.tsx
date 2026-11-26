@@ -9,7 +9,7 @@ export default function PortalError({ error, reset }: { error: Error & { digest?
       <ErrorCard message="Không hiển thị được trang này. Thử tải lại; nếu vẫn lỗi, hãy đăng xuất rồi đăng nhập lại." />
       {error.digest && (
         <p className="text-xs text-muted">
-          Mã lỗi gửi kèm khi báo AI Cinema: <code translate="no">{error.digest}</code>
+          Mã lỗi (gửi cho AI Cinema khi báo lỗi): <code translate="no">{error.digest}</code>
         </p>
       )}
       <button type="button" onClick={reset} className={BUTTON}>

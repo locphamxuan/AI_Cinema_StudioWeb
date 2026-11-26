@@ -59,7 +59,7 @@ export function SignatureField({ onChange }: { onChange: (file: File | null, pro
           className={`${INPUT} file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1 file:text-xs file:font-semibold file:text-primary-foreground`}
         />
         <span className="block text-xs text-muted">
-          Chụp hoặc quét chữ ký (và con dấu nếu có) trên nền trắng, cắt sát phần chữ ký. Hệ thống đặt ảnh vào ô Bên B của hợp đồng, kèm họ tên, chức vụ và ngày ký.
+          Ảnh chữ ký (và con dấu nếu có) trên nền trắng, cắt sát. Ảnh được đặt vào ô Bên B của hợp đồng kèm họ tên, chức vụ và ngày ký.
         </span>
       </label>
       {preview && file && (

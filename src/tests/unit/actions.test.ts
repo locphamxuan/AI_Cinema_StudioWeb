@@ -114,7 +114,7 @@ describe('actOnContract', () => {
       {},
       form({ contractId: 'c1', action: 'propose', priceMode: 'lower', costVnd: '1500', agree: 'on' }, signature()),
     );
-    expect(state.error).toBe('Giá phải là bội số của 1.000 VND.');
+    expect(state.error).toBe('Giá phải tròn nghìn đồng, ví dụ 170.000.000.');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

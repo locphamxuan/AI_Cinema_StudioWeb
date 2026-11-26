@@ -47,7 +47,7 @@ describe('validateSubmission', () => {
   });
 
   it('asks for a link of at most 1000 characters, and only hints at .m3u8 for HLS', () => {
-    expect(validateSubmission(valid({ method: 'REMOTE_FILE', url: '  ' }))).toEqual(['Vui lòng nhập đường dẫn phim.']);
+    expect(validateSubmission(valid({ method: 'REMOTE_FILE', url: '  ' }))).toEqual(['Vui lòng nhập link phim.']);
     // The API probes the playlist itself: a link without .m3u8 is not refused here.
     expect(validateSubmission(valid({ method: 'HLS_URL', url: 'https://cdn.studio.vn/play?id=1' }))).toEqual([]);
     expect(looksLikeHls('https://cdn.studio.vn/play?id=1')).toBe(false);
@@ -55,13 +55,13 @@ describe('validateSubmission', () => {
     expect(looksLikeHls('not a url')).toBe(false);
     expect(validateSubmission(valid({ method: 'HLS_URL', url: 'https://cdn.studio.vn/tap-1/master.m3u8?sig=1' }))).toEqual([]);
     expect(validateSubmission(valid({ method: 'REMOTE_FILE', url: `https://cdn.studio.vn/${'a'.repeat(1000)}.mp4` }))).toEqual([
-      'Đường dẫn phim tối đa 1000 ký tự.',
+      'Link phim tối đa 1000 ký tự.',
     ]);
   });
 
   it('asks for an http(s) link', () => {
     expect(validateSubmission(valid({ method: 'HLS_URL', url: 'ftp://x/a.m3u8' }))).toEqual([
-      'Đường dẫn phim phải là địa chỉ http(s) hợp lệ.',
+      'Link phim phải bắt đầu bằng http:// hoặc https://.',
     ]);
     expect(validateSubmission(valid({ method: 'REMOTE_FILE', url: 'https://cdn.studio.vn/tap-1.mp4' }))).toEqual([]);
   });
