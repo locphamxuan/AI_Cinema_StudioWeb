@@ -237,6 +237,12 @@ async function route(req, res) {
     return res.end(PDF);
   }
   if (method === 'GET' && path === '/studio-portal/projects') return send(res, 200, db.projects.map(projectSummary));
+  if (method === 'GET' && (match = path.match(/^\/studio-portal\/projects\/([^/]+)\/idea-files\/([^/]+)\/content$/))) {
+    const file = db.projects.find((item) => item.id === match[1])?.ideaFiles?.find((item) => item.id === match[2]);
+    if (!file) return fail(res, 404, 'NOT_FOUND', 'Idea file not found');
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${file.fileName}"` });
+    return res.end(PDF);
+  }
   if (method === 'GET' && (match = path.match(/^\/studio-portal\/projects\/([^/]+)$/))) {
     const project = db.projects.find((item) => item.id === match[1]);
     return project ? send(res, 200, projectDetail(project)) : fail(res, 404, 'NOT_FOUND', 'Project not found');

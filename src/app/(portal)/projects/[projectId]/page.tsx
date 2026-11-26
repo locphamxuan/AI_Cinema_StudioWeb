@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { EpisodeCard } from '@/components/EpisodeCard';
+import { IdeaFiles } from '@/components/IdeaFiles';
 import { PosterUpload } from '@/components/PosterUpload';
 import { Badge, CARD, EmptyNote, ErrorCard, Facts, Guarded, PageTitle } from '@/components/ui';
 import { CONTRACT_STATUS_LABEL, CONTRACT_STATUS_TONE, hasSignedContract } from '@/lib/domain/contract';
@@ -53,6 +54,7 @@ async function Project({ projectId }: { projectId: string }) {
           )}
         </section>
       </div>
+      <IdeaFiles projectId={project.id} files={project.ideaFiles ?? []} />
       <PosterUpload projectId={project.id} poster={project.studioPoster ?? null} />
       <section className={`${CARD} p-6`}>
         <h2 className="text-base font-bold">Kịch bản chính thức</h2>
